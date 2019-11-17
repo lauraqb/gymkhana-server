@@ -6,54 +6,70 @@ var io = require('socket.io')(server)
 
 app.get("/", function(req, res) {
   res.status(200).send("Hola mundo")
-  console.log("Log: Hola mundo")
 })
+
+let teamsData = []
+
+//Funcion que detecta si es un nuevo equipo y, en ese caso, devuelve true
+function isANewTeam(data) {
+  let isANewTeam = true
+  for (var key in teamsData) {
+    if (key == data.team) isANewTeam = false
+  }
+  return isANewTeam
+}
+
+function hasTeamMoved(data) {
+  let hasMoved = false
+  if (teamsData[data.team].latitude != data.latitude)
+    hasMoved = true
+  if (teamsData[data.team].longitude != data.longitude)
+    hasMoved = true
+  return hasMoved
+}
 
 io.on('connection', function(socket) {
   socket.on("coordenadas", data => {
-      console.log('Un equipo se ha conectado')
-      console.log(data)
+      const newTeam = isANewTeam(data) //booleano
+      if (newTeam) {
+        teamsData[data.team] = {
+          latitude : data.latitude,
+          longitude : data.longitude
+        }
+        console.log('El equipo '+data.team+' se ha conectado')
+      }
+      //si es un nuevo equipo o si las coordenadas han cambiado entonces las enviamos al centro de control
+      if(newTeam || hasTeamMoved(data)) {
+        console.log(data)
+        socket.broadcast.emit("coordenadasFromServer", data)
+      }
     }
   )
   socket.on("error", data => {
-    console.log(data)
-  }
-)
-
-});
-
-
-
-server.listen(port, () => {
-  console.log('We are live on port '+port);
-});
-
-// const wsServer = new webSocketServer({
-//   httpServer: server
-// })
-// var socket = [];
-// wsServer.on('request', function(request) {
-//   console.log("Server on request")
-//   const connection = request.accept(null, request.origin)
-//   //This is the most important callback:
-//   let msg= "nada"
-
-//   connection.on('message', function(message) {
-//     if (message.type === 'utf8') {
-//       //process WebSocket message
-//       socket.push(wsServer);
-//       console.log(socket)
-//       for(i = 0; i < socket.length; i++) {
-//         socket[i].send(message);
-//       }
-//     }
+      console.log(data)
+    }
+  )
+  socket.on("requestFromControlCenter", ()=> {
+    console.log("El centro de Control está pidiendo las coordenadas")
+    for (var key in teamsData) {
+      var data = { 
+        team: key,
+        latitude : teamsData[key].latitude,
+        longitude : teamsData[key].longitude
+      }
+      socket.broadcast.emit("coordenadasFromServer", data)
+    }
     
-//   })
+  })
+});
 
-//   connection.send(msg)
-//   //connection.send("mensaje del servidor al cliente")
-//   connection.on('close', function(connection) {
-//     //close user connection
-//   })
-// })
+
+io.listen(port);
+console.log('listening on port ', port);
+
+
+// server.listen(port, () => {
+//   console.log('We are live on port '+port);
+// });
+
 
