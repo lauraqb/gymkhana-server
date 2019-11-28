@@ -4,22 +4,35 @@ var app = express();
 var server = require('http').Server(app)
 var io = require('socket.io')(server)
 
+var mysql = require('mysql');
+
+var con = mysql.createConnection({
+  host: "localhost",
+  user: "root",
+  password: ""
+});
+
+con.connect(function(err) {
+  if (err) throw err;
+  console.log("Connected!");
+});
+
 app.get("/", function(req, res) {
   res.status(200).send("Hola mundo")
 })
 
 let teamsData = []
 
-//Funcion que detecta si es un nuevo equipo y, en ese caso, devuelve true
-function isANewTeam(data) {
-  let isANewTeam = true
+//Funcion que detecta si es un nuevo equipo. En ese caso, devuelve true
+function esUnEquipoNuevo(data) {
+  let equipoNuevo = true
   for (var key in teamsData) {
-    if (key == data.team) isANewTeam = false
+    if (key == data.team) equipoNuevo = false
   }
-  return isANewTeam
+  return equipoNuevo
 }
 
-function hasTeamMoved(data) {
+function equipoSeMueve(data) {
   let hasMoved = false
   if (teamsData[data.team].latitude != data.latitude)
     hasMoved = true
@@ -30,8 +43,8 @@ function hasTeamMoved(data) {
 
 io.on('connection', function(socket) {
   socket.on("coordenadas", data => {
-      const newTeam = isANewTeam(data) //booleano
-      if (newTeam) {
+      const equipoNuevo = esUnEquipoNuevo(data) //booleano
+      if (equipoNuevo) {
         teamsData[data.team] = {
           latitude : data.latitude,
           longitude : data.longitude
@@ -39,7 +52,7 @@ io.on('connection', function(socket) {
         console.log('El equipo '+data.team+' se ha conectado')
       }
       //si es un nuevo equipo o si las coordenadas han cambiado entonces las enviamos al centro de control
-      if(newTeam || hasTeamMoved(data)) {
+      if(equipoNuevo || equipoSeMueve(data)) {
         console.log(data)
         socket.broadcast.emit("coordenadasFromServer", data)
       }
@@ -59,7 +72,10 @@ io.on('connection', function(socket) {
       }
       socket.broadcast.emit("coordenadasFromServer", data)
     }
-    
+  })
+
+  socket.on("pruebaSuperada", ()=> {
+
   })
 });
 
