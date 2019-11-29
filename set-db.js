@@ -32,23 +32,23 @@ createTables = (dbName)=> {
         database: dbName
       });
 
-    var sql = "CREATE TABLE equipos (id INT(5), equipo VARCHAR(25))";
-    con2.query(sql, function (err, result) {
-        if (err) throw err;
-        console.log("Table equipos created");
-        var sql = "INSERT INTO equipos (id, equipo) VALUES ?";
-        var values = [
-            [1, 'Rojo'],
-            [2, 'Azul'],
-            [3, 'Verde']
-        ];
-        con2.query(sql, [values], function (err, result) {
-            if (err) throw err;
-            console.log("Number of records inserted: " + result.affectedRows);
-        });
-    });
+    // var sql = "CREATE TABLE equipos (id INT(5), equipo VARCHAR(25))";
+    // con2.query(sql, function (err, result) {
+    //     if (err) throw err;
+    //     console.log("Table equipos created");
+    //     var sql = "INSERT INTO equipos (id, equipo) VALUES ?";
+    //     var values = [
+    //         [1, 'Rojo'],
+    //         [2, 'Azul'],
+    //         [3, 'Verde']
+    //     ];
+    //     con2.query(sql, [values], function (err, result) {
+    //         if (err) throw err;
+    //         console.log("Number of records inserted: " + result.affectedRows);
+    //     });
+    // });
 
-    var sql = "CREATE TABLE pruebas_x_equipo (prueba INT(5), equipo INT(5), completada BOOLEAN)";
+    var sql = "CREATE TABLE pruebas_x_equipo (prueba INT(5), equipo VARCHAR(25), completada BOOLEAN)";
     con2.query(sql, function (err, result) {
         if (err) throw err;
         console.log("Table pruebas_x_equipo created");

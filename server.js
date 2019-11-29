@@ -3,23 +3,21 @@ var express = require('express');
 var app = express();
 var server = require('http').Server(app)
 var io = require('socket.io')(server)
-
 var mysql = require('mysql');
+const dotenv = require('dotenv');
+dotenv.config();
 
-var con = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: ""
+const connection = mysql.createConnection({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: "gymkhana"
 });
 
-con.connect(function(err) {
-  if (err) throw err;
-  console.log("Connected!");
-});
 
-app.get("/", function(req, res) {
-  res.status(200).send("Hola mundo")
-})
+// app.get("/", function(req, res) {
+//   res.status(200).send("Hola mundo")
+// })
 
 let teamsData = []
 
@@ -43,7 +41,33 @@ function equipoSeMueve(data) {
 
 io.on('connection', function(socket) {
   socket.on("coordenadas", data => {
-      const equipoNuevo = esUnEquipoNuevo(data) //booleano
+    geoAcciones.mandarCoordenadas(data, socket)
+  })
+  socket.on("error", data => {
+      console.log(data)
+  })
+  socket.on("requestFromControlCenter", ()=> {
+    geoAcciones.mandarCoordendasDeTodosLosEquipos(socket)
+  })
+
+  socket.on("pruebaCompletada", (data)=> {
+    connection.connect(function(err) {
+      if (err) throw err;
+      console.log("Connected!");
+      const prueba = data.challange
+      const equipo = data.team
+      var sql = "INSERT INTO pruebas_x_equipo (prueba, equipo) VALUES ('"+prueba+"', '"+equipo+"')";
+      connection.query(sql, function (err, result) {
+        if (err) throw err;
+        console.log("1 record inserted");
+      });
+    });
+  })
+});
+
+const geoAcciones = {
+  mandarCoordenadas : (data, socket) => {
+    const equipoNuevo = esUnEquipoNuevo(data) //booleano
       if (equipoNuevo) {
         teamsData[data.team] = {
           latitude : data.latitude,
@@ -53,16 +77,11 @@ io.on('connection', function(socket) {
       }
       //si es un nuevo equipo o si las coordenadas han cambiado entonces las enviamos al centro de control
       if(equipoNuevo || equipoSeMueve(data)) {
-        console.log(data)
+        console.log("data")
         socket.broadcast.emit("coordenadasFromServer", data)
       }
-    }
-  )
-  socket.on("error", data => {
-      console.log(data)
-    }
-  )
-  socket.on("requestFromControlCenter", ()=> {
+  },
+  mandarCoordendasDeTodosLosEquipos : (socket) => {
     console.log("El centro de Control está pidiendo las coordenadas")
     for (var key in teamsData) {
       var data = { 
@@ -72,12 +91,8 @@ io.on('connection', function(socket) {
       }
       socket.broadcast.emit("coordenadasFromServer", data)
     }
-  })
-
-  socket.on("pruebaSuperada", ()=> {
-
-  })
-});
+  }
+}
 
 
 io.listen(port);
