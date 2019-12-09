@@ -25,34 +25,27 @@ con.connect(function(err) {
 });
 
 createTables = (dbName)=> {
-    const con2 = mysql.createConnection({
+    const connection = mysql.createConnection({
         host: process.env.DB_HOST,
         user: process.env.DB_USER,
         password: process.env.DB_PASSWORD,
         database: dbName
       });
 
-    // var sql = "CREATE TABLE equipos (id INT(5), equipo VARCHAR(25))";
-    // con2.query(sql, function (err, result) {
-    //     if (err) throw err;
-    //     console.log("Table equipos created");
-    //     var sql = "INSERT INTO equipos (id, equipo) VALUES ?";
-    //     var values = [
-    //         [1, 'Rojo'],
-    //         [2, 'Azul'],
-    //         [3, 'Verde']
-    //     ];
-    //     con2.query(sql, [values], function (err, result) {
-    //         if (err) throw err;
-    //         console.log("Number of records inserted: " + result.affectedRows);
-    //     });
-    // });
-
-    var sql = "CREATE TABLE pruebas_x_equipo (prueba INT(5), equipo VARCHAR(25), completada BOOLEAN)";
-    con2.query(sql, function (err, result) {
+    var sql = "CREATE TABLE jugadores (nombre VARCHAR(25) PRIMARY KEY, equipo VARCHAR(25) NOT NULL)";
+    connection.query(sql, function (err, result) {
         if (err) throw err;
-        console.log("Table pruebas_x_equipo created");
+        console.log("Tabla 'jugadores' creada");
     });
 
+    var sql = "CREATE TABLE pruebas_x_jugador (prueba INT(5) NOT NULL, jugador VARCHAR(25) NOT NULL, equipo VARCHAR(25), completada BOOLEAN, CONSTRAINT UC_pruebaxjugador UNIQUE (prueba, jugador))";
+    connection.query(sql, function (err, result) {
+        if (err) throw err;
+        console.log("Tabla 'pruebas_x_jugador' creada");
+    });
+
+    connection.end(()=> {
+      console.log("END connection")
+    })
 
 }
