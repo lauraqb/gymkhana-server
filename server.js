@@ -18,7 +18,7 @@ const connection = mysql.createConnection({
 //   res.status(200).send("Hola mundo")
 // })
 
-let teamsData = []
+let jugadoresData = []
 
 io.on('connection', function(socket) {
   
@@ -38,8 +38,8 @@ io.on('connection', function(socket) {
   socket.on("coordenadas", data => {
     geoAcciones.mandarCoordenadas(data, socket)
   })
-  socket.on("requestCoordenadasFromCC", ()=> {
-    geoAcciones.mandarCoordendasDeTodosLosEquipos(socket)
+  socket.on("requestCoordenadasFromCC", (callback) => {
+    geoAcciones.mandarCoordendasDeTodosLosEquipos(socket, callback)
   })
   socket.on("requestUserListFromCC", ()=> {
     sendAllJugadores(socket)
@@ -135,32 +135,36 @@ const dbAcciones = {
   },
 
   checkJugadorExisteEnBD : (nombreJugador, callback) => {
-    var sql = "SELECT nombre FROM jugadores WHERE 'nombre' ='"+nombreJugador+"'"
+    var sql = "SELECT nombre FROM jugadores WHERE nombre ='"+nombreJugador+"'"
     console.log(sql)
     connection.query(sql, function (err, result) {
       if (err) throw err;
-      console.log("result: "+result)
+      console.log("result: "+result.length)
       callback(result.length)
     });
   }
 }
 const geoAcciones = {
 //Funcion que detecta si es un nuevo equipo. En ese caso, devuelve true
-    altaJugadorNuevo:(data) => {
-      teamsData[data.nombre] = {
+    addJugadorNuevo:(data) => {
+      console.log("añadimos jugador nuevo a jugadoresData.")
+      jugadoresData[data.nombre] = {
+        equipo: data.equipo,
         latitude : data.latitude,
         longitude : data.longitude
       }
     },
     checkJugadorEnMovimiento : (data)  => {
       let hasMoved = false
-      if (teamsData[data.nombre]) {
-        if (teamsData[data.nombre].latitude != data.latitude) {
-          teamsData[data.nombre].latitude = data.latitude
+      if (jugadoresData[data.nombre]) {
+        if (jugadoresData[data.nombre].latitude != data.latitude) {
+          console.log("latitud de "+data.nombre+": "+jugadoresData[data.nombre].latitude +" = "+data.latitude)
+          jugadoresData[data.nombre].latitude = data.latitude
           hasMoved = true
         }
-        if (teamsData[data.nombre].longitude != data.longitude) {
-          teamsData[data.nombre].longitude = data.longitude
+        if (jugadoresData[data.nombre].longitude != data.longitude) {
+          console.log("longitude de "+data.nombre+": "+jugadoresData[data.nombre].longitude +" = "+data.longitude)
+          jugadoresData[data.nombre].longitude = data.longitude
           hasMoved = true
         }
           
@@ -173,31 +177,46 @@ const geoAcciones = {
         console.log("Error. El campo nombre tiene que estar definido")
         return
       } 
+
+      data.latitude = data.latitude.toFixed(4);
+      data.longitude = data.longitude.toFixed(4);
       let jugadorNuevo = false
-      if (!teamsData[data.nombre]) {
+      if (!jugadoresData[data.nombre]) {
         jugadorNuevo = true
-        geoAcciones.altaJugadorNuevo(data)
+        geoAcciones.addJugadorNuevo(data)
       }
 
-      const equipoSeMueve = geoAcciones.checkJugadorEnMovimiento(data)
+      const jugadorSeMueve = geoAcciones.checkJugadorEnMovimiento(data)
       //si es un nuevo equipo o si las coordenadas han cambiado entonces las enviamos al centro de control
-      if(jugadorNuevo || equipoSeMueve) {
+      if(jugadorNuevo || jugadorSeMueve) {
         if (jugadorNuevo) console.log('El jugador '+data.nombre+' se ha conectado. Enviamos coordenadas.')
-        if (equipoSeMueve) console.log("El jugador: "+ data.nombre+" se mueve")
+        if (jugadorSeMueve) console.log("El jugador: "+ data.nombre+" se mueve")
         
         socket.broadcast.emit("coordenadasFromServer", data)
       }
     },
-    mandarCoordendasDeTodosLosEquipos : (socket) => {
-      console.log("El Centro de Control está pidiendo las coordenadas")
-      for (var key in teamsData) {
+    mandarCoordendasDeTodosLosEquipos : (socket, callback) => {
+      console.log("El Centro de Control está pidiendo las coordenadas. jugadoresData: ")
+      console.log(jugadoresData)
+      // callback(jugadoresData)
+      let myArray = []
+      for (var key in jugadoresData) {
         var data = { 
-          team: key,
-          latitude : teamsData[key].latitude,
-          longitude : teamsData[key].longitude
+          jugador: key,
+          equipo: jugadoresData[key].equipo,
+          latitude : jugadoresData[key].latitude,
+          longitude : jugadoresData[key].longitude
         }
-        socket.broadcast.emit("coordenadasFromServer", data)
+        myArray.push(data)
+        // console.log("Emitimos socket coordenadasFromServer")
+        // socket.broadcast.emit("coordenadasFromServer", data)
       }
+      console.log(myArray.length)
+      if (myArray.length > 0) {
+        const allData = JSON.stringify(myArray)
+        callback(allData)
+      }
+      
     }
 }
 
