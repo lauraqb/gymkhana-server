@@ -32,8 +32,8 @@ io.on('connection', function(socket) {
     console.log("socket on 'pruebaCompletada': "+data)
     dbAcciones.pruebaCompletada(data, callback, socket)
   })
-  socket.on("eliminarJugadorFromCC", (data) => {
-    dbAcciones.eliminarJugador(data)
+  socket.on("eliminarJugadorFromCC", (data, callback) => {
+    dbAcciones.eliminarJugador(data, callback)
   })
   socket.on("coordenadas", data => {
     geoAcciones.mandarCoordenadas(data, socket)
@@ -74,12 +74,13 @@ const dbAcciones = {
     });
   },
 
-  eliminarJugador : (nombreJugador) => {
-    var sql = "DELETE FROM jugadores WHERE ('nombre' = '"+nombreJugador+"')";
+  eliminarJugador : (nombreJugador, callback) => {
+    var sql = "DELETE FROM jugadores WHERE nombre = '"+nombreJugador+"'";
     console.log("sql: "+sql)
     connection.query(sql, function (err, result) {
       if (err) throw err;
       console.log("Jugador "+nombreJugador+" eliminado.");
+      callback(true)
     });
   },
 
