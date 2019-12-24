@@ -33,7 +33,7 @@ createTables = (dbName)=> {
       });
 
     //"partidas"
-    var sql = "CREATE TABLE partidas (id INT(5) PRIMARY KEY, nombre_partida VARCHAR(10) NOT NULL, clave VARCHAR(10) NOT NULL)";
+    var sql = "CREATE TABLE partidas (id INT(5) PRIMARY KEY AUTO_INCREMENT, nombre_partida VARCHAR(10) NOT NULL, clave VARCHAR(10) NOT NULL)";
     connection.query(sql, function (err, result) {
         if (err) throw err;
         console.log("Tabla 'partidas' creada");

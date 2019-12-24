@@ -52,11 +52,8 @@ io.on('connection', function(socket) {
 
 });
 
-const partidas = (socket) => {
-  socket.on("requestPartidasFromCC", callback => {
-    dbAcciones.getPartidas(callback)
-  })
-}
+
+
 const sendAllJugadores = (socket) => {
   var sql = "SELECT * FROM jugadores";
   connection.query(sql, function (err, result) {
@@ -112,9 +109,7 @@ const dbAcciones = {
         io.sockets.emit('jugadoresRestantesFromServer', jugadoresRestantes);
      //   socket.emit("jugadoresRestantesFromServer", jugadoresRestantes)
         callback(jugadoresRestantes)
-
       })
-      
     })
   },
 
@@ -158,6 +153,18 @@ const dbAcciones = {
       if (err) throw err;
       console.log("result: "+result)
       callback(result)
+    });
+  },
+
+  addPartida : (data) => {
+    const nombrePartida = data.nombrePartida
+    const clave = data.clave
+    var sql = "INSERT IGNORE INTO partidas (nombre_partida, clave) VALUES ('"+nombrePartida+"', '"+clave+"')";
+    console.log(sql)
+    connection.query(sql, function (err, result) {
+      if (err) throw err;
+      console.log("1 record insert en partidas -> nombrePartida: '"+nombrePartida+"'")
+      // callback(result)
     });
   }
 }
@@ -240,6 +247,16 @@ const geoAcciones = {
     }
 }
 
+
+//sockets para la creación y gestión de partidas
+const partidas = (socket) => {
+  socket.on("requestPartidasFromCC", callback => {
+    dbAcciones.getPartidas(callback)
+  })
+  socket.on("addNuevaPartida", data => {
+    dbAcciones.addPartida(data)
+  })
+}
 
 io.listen(port);
 console.log('listening on port ', port);
