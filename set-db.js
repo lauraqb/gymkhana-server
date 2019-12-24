@@ -32,12 +32,28 @@ createTables = (dbName)=> {
         database: dbName
       });
 
-    var sql = "CREATE TABLE jugadores (nombre VARCHAR(25) PRIMARY KEY, equipo VARCHAR(25) NOT NULL)";
+    //"partidas"
+    var sql = "CREATE TABLE partidas (id INT(5) PRIMARY KEY, nombre_partida VARCHAR(10) NOT NULL, clave VARCHAR(10) NOT NULL)";
+    connection.query(sql, function (err, result) {
+        if (err) throw err;
+        console.log("Tabla 'partidas' creada");
+    });
+
+    //"equipos"
+    var sql = "CREATE TABLE equipos (id INT(5) PRIMARY KEY, partida_id VARCHAR(10) NOT NULL, nombre_equipo VARCHAR(10) NOT NULL, clave VARCHAR(10))";
+    connection.query(sql, function (err, result) {
+        if (err) throw err;
+        console.log("Tabla 'equipos' creada");
+    });
+  
+    //"jugadores"
+    var sql = "CREATE TABLE jugadores (nombre_jugador VARCHAR(25) PRIMARY KEY, equipo VARCHAR(25) NOT NULL)";
     connection.query(sql, function (err, result) {
         if (err) throw err;
         console.log("Tabla 'jugadores' creada");
     });
 
+    //TODO cambiar a nombre_jugador
     var sql = "CREATE TABLE pruebas_x_jugador (prueba INT(5) NOT NULL, jugador VARCHAR(25) NOT NULL, equipo VARCHAR(25), completada BOOLEAN, CONSTRAINT UC_pruebaxjugador UNIQUE (prueba, jugador))";
     connection.query(sql, function (err, result) {
         if (err) throw err;

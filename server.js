@@ -48,9 +48,15 @@ io.on('connection', function(socket) {
     console.log(data)
   })
   
+  partidas(socket)
 
 });
 
+const partidas = (socket) => {
+  socket.on("requestPartidasFromCC", callback => {
+    dbAcciones.getPartidas(callback)
+  })
+}
 const sendAllJugadores = (socket) => {
   var sql = "SELECT * FROM jugadores";
   connection.query(sql, function (err, result) {
@@ -136,15 +142,28 @@ const dbAcciones = {
   },
 
   checkJugadorExisteEnBD : (nombreJugador, callback) => {
-    var sql = "SELECT nombre FROM jugadores WHERE nombre ='"+nombreJugador+"'"
+    var sql = "SELECT nombre_jugador FROM jugadores WHERE nombre ='"+nombreJugador+"'"
     console.log(sql)
     connection.query(sql, function (err, result) {
       if (err) throw err;
       console.log("result: "+result.length)
       callback(result.length)
     });
+  },
+
+  getPartidas : (callback) => {
+    var sql = "SELECT nombre_partida FROM partidas"
+    console.log(sql)
+    connection.query(sql, function (err, result) {
+      if (err) throw err;
+      console.log("result: "+result)
+      callback(result)
+    });
   }
 }
+
+
+
 const geoAcciones = {
 //Funcion que detecta si es un nuevo equipo. En ese caso, devuelve true
     addJugadorNuevo:(data) => {
