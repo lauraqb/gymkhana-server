@@ -23,26 +23,26 @@ let jugadoresData = []
 io.on('connection', function(socket) {
   
   socket.on("checkJugadorFromApp", (jugador, callback) => {
-    dbAcciones.checkJugadorExisteEnBD(jugador, callback)
+    dbActions.checkPlayerInDB(jugador, callback)
   })
   socket.on("nuevoJugador", data => {
-    dbAcciones.insertarNuevoJugador(data)
+    dbActions.insertNewPlayer(data)
   })
   socket.on("pruebaCompletada", (data, callback)=> {
     console.log("socket on 'pruebaCompletada': "+data)
-    dbAcciones.pruebaCompletada(data, callback, socket)
+    dbActions.challengeCompleted(data, callback, socket)
   })
   socket.on("eliminarJugadorFromCC", (data, callback) => {
-    dbAcciones.eliminarJugador(data, callback)
+    dbActions.deletePlayer(data, callback)
   })
   socket.on("coordenadas", data => {
-    geoAcciones.mandarCoordenadas(data, socket)
+    geoAcciones.sendCoordinates(data, socket)
   })
   socket.on("requestCoordenadasFromCC", (callback) => {
-    geoAcciones.mandarCoordendasDeTodosLosEquipos(socket, callback)
+    geoAcciones.sendCoordinatesOfAllTeams(socket, callback)
   })
   socket.on("requestUserListFromCC", ()=> {
-    sendAllJugadores(socket)
+    sendAllPlayersData(socket)
   })
   socket.on("error", data => {
     console.log(data)
@@ -54,7 +54,7 @@ io.on('connection', function(socket) {
 
 
 
-const sendAllJugadores = (socket) => {
+const sendAllPlayersData = (socket) => {
   var sql = "SELECT * FROM jugadores";
   connection.query(sql, function (err, result) {
     if (err) throw err;
@@ -65,8 +65,8 @@ const sendAllJugadores = (socket) => {
   });
 };
 
-const dbAcciones = {
-  insertarNuevoJugador : (data) => {
+const dbActions = {
+  insertNewPlayer : (data) => {
     //TODO insert ignore - solo si no existe. Tambien hacer unique el nombre
     const nombre = data.jugador
     const equipo = data.equipo
@@ -77,7 +77,7 @@ const dbAcciones = {
     });
   },
 
-  eliminarJugador : (nombreJugador, callback) => {
+  deletePlayer : (nombreJugador, callback) => {
     var sql = "DELETE FROM jugadores WHERE nombre = '"+nombreJugador+"'";
     console.log("sql: "+sql)
     connection.query(sql, function (err, result) {
@@ -87,7 +87,7 @@ const dbAcciones = {
     });
   },
 
-  pruebaCompletada : (data, callback, socket) => {
+  challengeCompleted : (data, callback, socket) => {
     const prueba = data.pruebaId
     const jugador = data.nombre
     const equipo = data.team
@@ -101,8 +101,8 @@ const dbAcciones = {
       total : null,
       pruebaCompletada : null
     }
-    dbAcciones.getJugadoresEquipo(equipo).then(function(jugadores) {
-      dbAcciones.getJugadoresPruebaCompletada(prueba, equipo).then(function(jugadoresCompletados) {
+    dbActions.getJugadoresEquipo(equipo).then(function(jugadores) {
+      dbActions.getJugadoresPruebaCompletada(prueba, equipo).then(function(jugadoresCompletados) {
         const jugadoresRestantes = jugadores-jugadoresCompletados
         console.log("Emitimos socket 'jugadoresRestantesFromServer' -> Prueba: "+prueba+" - jugadoresRestantes: "+jugadoresRestantes)
             //to emit to all sockets:
@@ -136,7 +136,7 @@ const dbAcciones = {
     })
   },
 
-  checkJugadorExisteEnBD : (nombreJugador, callback) => {
+  checkPlayerInDB : (nombreJugador, callback) => {
     var sql = "SELECT nombre_jugador FROM jugadores WHERE nombre ='"+nombreJugador+"'"
     console.log(sql)
     connection.query(sql, function (err, result) {
@@ -147,11 +147,11 @@ const dbAcciones = {
   },
 
   getPartidas : (callback) => {
-    var sql = "SELECT nombre_partida FROM partidas"
+    var sql = "SELECT id, nombre_partida, clave FROM partidas"
     console.log(sql)
     connection.query(sql, function (err, result) {
       if (err) throw err;
-      console.log("result: "+result)
+      console.log("result getPartidas: "+JSON.stringify(result, null, 4))
       callback(result)
     });
   },
@@ -199,7 +199,7 @@ const geoAcciones = {
       return hasMoved
     },
 
-    mandarCoordenadas : (data, socket) => {
+    sendCoordinates : (data, socket) => {
       if (!data.nombre) {
         console.log("Error. El campo nombre tiene que estar definido")
         return
@@ -222,7 +222,7 @@ const geoAcciones = {
         socket.broadcast.emit("coordenadasFromServer", data)
       }
     },
-    mandarCoordendasDeTodosLosEquipos : (socket, callback) => {
+    sendCoordinatesOfAllTeams : (socket, callback) => {
       console.log("El Centro de Control está pidiendo las coordenadas. jugadoresData: ")
       console.log(jugadoresData)
       // callback(jugadoresData)
@@ -247,14 +247,13 @@ const geoAcciones = {
     }
 }
 
-
 //sockets para la creación y gestión de partidas
 const partidas = (socket) => {
   socket.on("requestPartidasFromCC", callback => {
-    dbAcciones.getPartidas(callback)
+    dbActions.getPartidas(callback)
   })
   socket.on("addNuevaPartida", data => {
-    dbAcciones.addPartida(data)
+    dbActions.addPartida(data)
   })
 }
 
