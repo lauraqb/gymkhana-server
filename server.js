@@ -1,3 +1,4 @@
+const PlayerEventHandler = require('./playerEventHandler');
 const port = 8000
 var express = require('express');
 var app = express();
@@ -6,6 +7,7 @@ var io = require('socket.io')(server)
 var mysql = require('mysql');
 const dotenv = require('dotenv');
 dotenv.config();
+
 
 const connection = mysql.createConnection({
   host: process.env.DB_HOST,
@@ -21,7 +23,7 @@ const connection = mysql.createConnection({
 let jugadoresData = []
 
 io.on('connection', function(socket) {
-  
+  const player = PlayerEventHandler(socket, connection);
   socket.on("checkJugadorFromApp", (jugador, callback) => {
     dbActions.checkPlayerInDB(jugador, callback)
   })
