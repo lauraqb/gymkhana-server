@@ -24,9 +24,7 @@ let jugadoresData = []
 
 io.on('connection', function(socket) {
   const player = PlayerEventHandler(socket, connection);
-  socket.on("checkJugadorFromApp", (jugador, callback) => {
-    dbActions.checkPlayerInDB(jugador, callback)
-  })
+
   socket.on("nuevoJugador", data => {
     dbActions.insertNewPlayer(data)
   })
@@ -72,7 +70,7 @@ const dbActions = {
     //TODO insert ignore - solo si no existe. Tambien hacer unique el nombre
     const nombre = data.jugador
     const equipo = data.equipo
-    var sql = "INSERT IGNORE INTO jugadores (nombre, equipo) VALUES ('"+nombre+"', '"+equipo+"')";
+    var sql = "INSERT IGNORE INTO jugadores (nombre_jugador, equipo) VALUES ('"+nombre+"', '"+equipo+"')";
     connection.query(sql, function (err, result) {
       if (err) throw err;
       console.log("1 record insert en 'jugadores' -> nombre: '"+nombre+"'");
@@ -80,7 +78,7 @@ const dbActions = {
   },
 
   deletePlayer : (nombreJugador, callback) => {
-    var sql = "DELETE FROM jugadores WHERE nombre = '"+nombreJugador+"'";
+    var sql = "DELETE FROM jugadores WHERE nombre_jugador = '"+nombreJugador+"'";
     console.log("sql: "+sql)
     connection.query(sql, function (err, result) {
       if (err) throw err;
@@ -136,16 +134,6 @@ const dbActions = {
         else resolve(result.length);
       });
     })
-  },
-
-  checkPlayerInDB : (nombreJugador, callback) => {
-    var sql = "SELECT nombre_jugador FROM jugadores WHERE nombre ='"+nombreJugador+"'"
-    console.log(sql)
-    connection.query(sql, function (err, result) {
-      if (err) throw err;
-      console.log("result: "+result.length)
-      callback(result.length)
-    });
   },
 
   getPartidas : (callback) => {
