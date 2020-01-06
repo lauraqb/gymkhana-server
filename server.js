@@ -28,8 +28,8 @@ io.on('connection', function(socket) {
   socket.on("nuevoJugador", data => {
     dbActions.insertNewPlayer(data)
   })
-  socket.on("pruebaCompletada", (data, callback)=> {
-    console.log("socket on 'pruebaCompletada': "+data)
+  socket.on("app/challengeDone", (data, callback)=> {
+    console.log("socket on 'app/challengeDone': "+data)
     dbActions.challengeCompleted(data, callback, socket)
   })
   socket.on("eliminarJugadorFromCC", (data, callback) => {
@@ -104,10 +104,10 @@ const dbActions = {
     dbActions.getJugadoresEquipo(equipo).then(function(jugadores) {
       dbActions.getJugadoresPruebaCompletada(prueba, equipo).then(function(jugadoresCompletados) {
         const jugadoresRestantes = jugadores-jugadoresCompletados
-        console.log("Emitimos socket 'jugadoresRestantesFromServer' -> Prueba: "+prueba+" - jugadoresRestantes: "+jugadoresRestantes)
+        console.log("Emitimos socket 'server/playersLeftToComplete' -> Prueba: "+prueba+" - jugadoresRestantes: "+jugadoresRestantes)
             //to emit to all sockets:
-        io.sockets.emit('jugadoresRestantesFromServer', jugadoresRestantes);
-     //   socket.emit("jugadoresRestantesFromServer", jugadoresRestantes)
+        io.sockets.emit('server/playersLeftToComplete', jugadoresRestantes);
+     //   socket.emit("server/playersLeftToComplete", jugadoresRestantes)
         callback(jugadoresRestantes)
       })
     })
