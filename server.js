@@ -1,13 +1,13 @@
-const PlayerEventHandler = require('./playerEventHandler');
-const port = 8000
-var express = require('express');
+const express = require('express')
+const router = express.Router()
 var app = express();
+const DbActions = require('./dbActions');
+const port = 8000
 var server = require('http').Server(app)
 var io = require('socket.io')(server)
 var mysql = require('mysql');
 const dotenv = require('dotenv');
 dotenv.config();
-
 
 const connection = mysql.createConnection({
   host: process.env.DB_HOST,
@@ -15,15 +15,41 @@ const connection = mysql.createConnection({
   password: process.env.DB_PASSWORD,
   database: "gymkhana"
 });
+app.use(express.urlencoded())
+app.use(express.json())
+app.use(function(req, res, next) {
+  //Es para evitar CORS problem con el cliente
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  next();
+});
 
-// app.get("/", function(req, res) {
-//   res.status(200).send("Hola mundo")
-// })
+app.use(router) 
+
+router.get("/", function(req, res) {
+  console.log("hola desde get")
+  res.send('hola desde get');
+})
+
+router.post("/validateGame", function(req, res) {
+  DbActions(connection).getGameData(req.body.pin, (data)=> {
+    console.log(data)
+    if(data.length === 0) res.send("No existe")
+    else res.send(data)
+  })
+})
+
+router.post("/checkPlayerInDB", function(req, res) {
+  console.log(req.body.player)
+  DbActions(connection).getGameData(req.body.player, (data, callback)=> {
+    res.send('checkPlayerInDB: '+data);
+  })
+})
 
 let jugadoresData = []
 
 io.on('connection', function(socket) {
-  const player = PlayerEventHandler(socket, connection);
+  //const player = PlayerEventHandler(socket, connection);
 
   socket.on("nuevoJugador", data => {
     dbActions.insertNewPlayer(data)
@@ -247,12 +273,10 @@ const partidas = (socket) => {
   })
 }
 
-io.listen(port);
-console.log('listening on port ', port);
 
-
-// server.listen(port, () => {
-//   console.log('We are live on port '+port);
-// });
+io = io.listen(server)
+server.listen(port, () => {
+  console.log('We are live on port '+port);
+})
 
 
