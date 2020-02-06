@@ -11,7 +11,9 @@ var DbActions = (connection) => {
     });
   }
 
-  checkPlayerInDB = (nombreJugador, callback) => {
+  const checkPlayerInDB = (nombreJugador, callback) => {
+    if(typeof nombreJugador !== "string")
+    return console.log("nombreJugador is a: "+typeof pin)
       var sql = "SELECT nombre_jugador FROM jugadores WHERE nombre_jugador ='"+nombreJugador+"'"
       console.log(sql)
       connection.query(sql, function (err, result) {

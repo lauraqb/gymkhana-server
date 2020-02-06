@@ -40,8 +40,8 @@ router.post("/validateGame", function(req, res) {
 })
 
 router.post("/checkPlayerInDB", function(req, res) {
-  console.log(req.body.player)
-  DbActions(connection).getGameData(req.body.player, (data, callback)=> {
+  console.log("checkPlayerInDB:" +req.body.player)
+  DbActions(connection).checkPlayerInDB(req.body.player, (data, callback)=> {
     res.send('checkPlayerInDB: '+data);
   })
 })
@@ -100,7 +100,7 @@ const dbActions = {
     connection.query(sql, function (err, result) {
       if (err) throw err;
       console.log("1 record insert en 'jugadores' -> nombre: '"+nombre+"'");
-    });
+    })
   },
 
   deletePlayer : (nombreJugador, callback) => {
