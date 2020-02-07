@@ -4,9 +4,9 @@ dotenv.config();
 var mysql = require('mysql');
 
 const con = mysql.createConnection({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
+  host: process.env.MYSQL_DB_HOST,
+  user: process.env.MYSQL_DB_USER,
+  password: process.env.MYSQL_DB_PASSWORD,
 });
 
 con.connect(function(err) {
@@ -26,9 +26,9 @@ con.connect(function(err) {
 
 createTables = (dbName)=> {
     const connection = mysql.createConnection({
-        host: process.env.DB_HOST,
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
+        host: process.env.MYSQL_DB_HOST,
+        user: process.env.MYSQL_DB_USER,
+        password: process.env.MYSQL_DB_PASSWORD,
         database: dbName
       });
 
