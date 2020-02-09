@@ -9,12 +9,29 @@ var mysql = require('mysql');
 const dotenv = require('dotenv');
 dotenv.config();
 
-const connection = mysql.createConnection({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: "gymkhana"
-});
+const { Client } = require('pg')
+
+const client = new Client({
+  host: process.env.POSTGRESQL_DB_HOST,
+  user: process.env.POSTGRESQL_DB_USER,
+  password: process.env.POSTGRESQL_DB_PASSWORD,
+  database: 'gymkhana',
+  port: 5432
+})
+
+client.connect(err => {
+  if (err) {
+    console.error('connection error', err.stack)
+  } else {
+    console.log('connected')
+  }
+})
+// const connection = mysql.createConnection({
+//   host: process.env.DB_HOST,
+//   user: process.env.DB_USER,
+//   password: process.env.DB_PASSWORD,
+//   database: "gymkhana"
+// });
 app.use(express.urlencoded())
 app.use(express.json())
 app.use(function(req, res, next) {
@@ -31,13 +48,25 @@ router.get("/", function(req, res) {
   res.send('hola desde get');
 })
 
-router.post("/validateGame", function(req, res) {
-  DbActions(connection).getGameData(req.body.pin, (data)=> {
-    console.log(data)
-    if(data.length === 0) res.send("No existe")
-    else res.send(data)
+router.post("/validateGame", (req, res)=> {
+  const pin = req.body.pin
+  DbActions(client).getGameData(pin, (data)=> {
+    res.send(data)
   })
 })
+
+router.post("/joinTeam", (req, res)=> {
+  const options = {
+    player: req.body.player,
+    game_id : req.body.game_id,
+    key: req.body.key
+  }
+  DbActions(client).joinTeam(options, (data)=> {
+    res.send(data)
+  })
+
+})
+
 
 router.post("/checkPlayerInDB", function(req, res) {
   console.log("checkPlayerInDB:" +req.body.player)

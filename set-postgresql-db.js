@@ -17,6 +17,7 @@ client.connect(err => {
   } else {
     console.log('connected')
     createTables()
+    insertSomeData()
   }
 })
 
@@ -25,49 +26,84 @@ client.connect(err => {
  */
 const createTables = () => {
   const query1 = `CREATE TABLE IF NOT EXISTS 
-    partidas (
-      id integer NOT NULL,
-      nombre character varying(100) 
-      pin character varying(5) NOT NULL
-    )`//nombre_partida VARCHAR(20) NOT NULL, 
+    games (
+      id serial NOT NULL,
+      name character varying(20) COLLATE pg_catalog."default",
+      pin integer,
+      PRIMARY KEY (id)
+    );`//partidas
+    //nombre_partida VARCHAR(20) NOT NULL, 
  
-    const query2 = `CREATE TABLE IF NOT EXISTS 
-      teams (
-        id integer NOT NULL,
-        nombre character varying(100) 
-        clave character varying(5) NOT NULL
-      )`//   partida_id VARCHAR(10) NOT NULL, 
+  const query2 = `CREATE TABLE IF NOT EXISTS 
+    teams (
+      id serial NOT NULL,
+      game_id integer,
+      name character varying(50),
+      key character varying(10),
+      PRIMARY KEY (id),
+      CONSTRAINT teams_games_fkey FOREIGN KEY (game_id)
+          REFERENCES public.games (id) MATCH SIMPLE
+          ON UPDATE CASCADE
+          ON DELETE CASCADE
+          NOT VALID
+    );`//   partida_id VARCHAR(10) NOT NULL, 
 
     const query3 = `CREATE TABLE IF NOT EXISTS 
       players (
-        id integer NOT NULL DEFAULT nextval('players_id_seq'::regclass),
-        nombre character varying(100) 
-      )`//equipo VARCHAR(25) NOT NULL
+        id serial,
+        id_team integer,
+        name character(100),
+        PRIMARY KEY (id),
+        CONSTRAINT players_teams_fkey FOREIGN KEY (id_team)
+          REFERENCES public.teams (id) MATCH SIMPLE
+          ON UPDATE CASCADE
+          ON DELETE CASCADE
+          NOT VALID
+      );`//equipo VARCHAR(25) NOT NULL
     
     const query4 = `CREATE TABLE IF NOT EXISTS 
-      pruebas_x_jugador (
-        id integer NOT NULL,
-        id_player integer, 
-        id_team integer, 
-        completada BOOLEAN, 
-        CONSTRAINT UC_pruebaxjugador UNIQUE (prueba, jugador)
-      )`// prueba INT(5) NOT NULL, 
+      challenges_completed (
+        id serial NOT NULL,
+        id_player integer,
+        PRIMARY KEY (id),
+        CONSTRAINT challenge_player UNIQUE (id, id_player),
+        CONSTRAINT challenges_players FOREIGN KEY (id_player)
+            REFERENCES public.players (id) MATCH SIMPLE
+            ON UPDATE CASCADE
+            ON DELETE CASCADE
+            NOT VALID
+      );`// prueba INT(5) NOT NULL, 
 
-      
     client.query(query1, (err, res) => {
-      console.log(err ? err.stack : "Tabla 'partidas' creada") // Hello World!
+      console.log(err ? err.stack : "Table 'games' created") 
     })
     client.query(query2, (err, res) => {
-      console.log(err ? err.stack : "Tabla 'equipos' creada") // Hello World!
+      console.log(err ? err.stack : "Table 'teams' created") 
     })
     client.query(query3, (err, res) => {
-      console.log(err ? err.stack : "Tabla 'jugadores' creada") // Hello World!
+      console.log(err ? err.stack : "Table 'players' created") 
     })
     client.query(query4, (err, res) => {
-      console.log(err ? err.stack : "Tabla 'pruebas_x_jugador' creada") // Hello World!
+      console.log(err ? err.stack : "Table 'challenges_completed' created") 
     })
 
-    client.end(()=> {
-      console.log("END connection")
+}
+
+const insertSomeData = () => {
+    client.query("INSERT INTO games(name, pin) VALUES ('Piratas', 1234);", (err, res) => {
+      console.log(err ? err.stack : "Insert 'Piratas' game") 
+    })
+    client.query("SELECT id FROM games WHERE name='Piratas';", (err, res) => {
+      console.log(err ? err.stack : "Select id 'Piratas'") 
+      console.log(res) 
+      const game_id = 1
+      client.query("INSERT INTO teams(game_id, name, key) VALUES ("+game_id+", 'rojo', '123');", (err, res) => {
+        console.log(err ? err.stack : "Insertado equipo rojo") 
+      })
+      //TODO averiguar como obtener el id para hacer los siguientes inserts
     })
 }
+
+client.end(()=> {
+  console.log("END connection")
+})
