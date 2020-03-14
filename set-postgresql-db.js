@@ -12,6 +12,7 @@ const client = new Client({
 })
 
 client.connect(err => {
+  console.log("entraa")
   if (err) {
     console.error('connection error', err.stack)
   } else {
@@ -30,6 +31,7 @@ const createTables = () => {
       id serial NOT NULL,
       name character varying(20) COLLATE pg_catalog."default",
       pin integer,
+      background character varying(50),
       PRIMARY KEY (id)
     );`//partidas
     //nombre_partida VARCHAR(20) NOT NULL, 
@@ -40,6 +42,7 @@ const createTables = () => {
       game_id integer,
       name character varying(50),
       key character varying(10),
+      num_players integer,
       PRIMARY KEY (id),
       CONSTRAINT teams_games_fkey FOREIGN KEY (game_id)
           REFERENCES public.games (id) MATCH SIMPLE
@@ -51,10 +54,16 @@ const createTables = () => {
     const query3 = `CREATE TABLE IF NOT EXISTS 
       players (
         id serial,
-        id_team integer,
+        team_id integer,
+        game_id integer,
         name character(100),
         PRIMARY KEY (id),
-        CONSTRAINT players_teams_fkey FOREIGN KEY (id_team)
+        CONSTRAINT players_games_fkey FOREIGN KEY (game_id)
+          REFERENCES public.games (id) MATCH SIMPLE
+          ON UPDATE CASCADE
+          ON DELETE CASCADE
+          NOT VALID,
+        CONSTRAINT players_teams_fkey FOREIGN KEY (team_id)
           REFERENCES public.teams (id) MATCH SIMPLE
           ON UPDATE CASCADE
           ON DELETE CASCADE
@@ -64,10 +73,10 @@ const createTables = () => {
     const query4 = `CREATE TABLE IF NOT EXISTS 
       challenges_completed (
         id serial NOT NULL,
-        id_player integer,
+        player_id integer,
         PRIMARY KEY (id),
-        CONSTRAINT challenge_player UNIQUE (id, id_player),
-        CONSTRAINT challenges_players FOREIGN KEY (id_player)
+        CONSTRAINT challenge_player UNIQUE (id, player_id),
+        CONSTRAINT challenges_players FOREIGN KEY (player_id)
             REFERENCES public.players (id) MATCH SIMPLE
             ON UPDATE CASCADE
             ON DELETE CASCADE
@@ -104,6 +113,6 @@ const insertSomeData = () => {
     })
 }
 
-client.end(()=> {
-  console.log("END connection")
-})
+// client.end(()=> {
+//   console.log("END connection")
+// })

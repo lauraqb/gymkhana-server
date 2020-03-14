@@ -26,12 +26,7 @@ client.connect(err => {
     console.log('connected')
   }
 })
-// const connection = mysql.createConnection({
-//   host: process.env.DB_HOST,
-//   user: process.env.DB_USER,
-//   password: process.env.DB_PASSWORD,
-//   database: "gymkhana"
-// });
+
 app.use(express.urlencoded())
 app.use(express.json())
 app.use(function(req, res, next) {
@@ -48,24 +43,103 @@ router.get("/", function(req, res) {
   res.send('hola desde get');
 })
 
+/** Retorna un objeto con 2 parámetros: 
+ * - valid (que puede ser true or false)
+ * - result */
 router.post("/validateGame", (req, res)=> {
   const pin = req.body.pin
-  DbActions(client).getGameData(pin, (data)=> {
+  DbActions(client).getGameData(pin, (response)=> {
+    const data = {
+      valid : response.length === 0 ? false : true,
+      result : response.length === 0 ? null : response[0]
+    }
+    console.log("/validateGame: "+data)
     res.send(data)
   })
 })
 
-router.post("/joinTeam", (req, res)=> {
+router.post("/joinUser", joinUser)
+router.post("/joinTeam", joinTeam)
+
+async function joinUser(req, res){
   const options = {
-    player: req.body.player,
+    username: req.body.username,
     game_id : req.body.game_id,
-    key: req.body.key
   }
-  DbActions(client).joinTeam(options, (data)=> {
-    res.send(data)
-  })
+  const data = {
+    duplicated : false,
+    result : null
+  }
 
-})
+  let response = await DbActions(client).checkPlayerInDB(options)
+  if(response.length > 0) {
+    console.log("Nombre duplicado")
+    data.duplicated = true 
+  }
+  else { 
+    let response2 = await DbActions(client).insertNewPlayer(options)
+    if (response2.err) { console.log('error');}
+    else { 
+      console.log(response2)
+      data.result = response2 
+    }
+  }
+  res.send(data)
+}
+
+async function joinTeam(req, res) {
+  console.log("Join Team()")
+  const options = {
+    userId: req.body.userId,
+    gameId : req.body.gameId,
+    key: req.body.key,
+    teamId: null
+  }
+  const data = {
+    valid : false,
+    result : null
+  }
+
+  if (!options.userId || !options.gameId || !options.userId) {
+    // res.send(data.error)
+    console.log(options)
+    return
+  }
+
+  const response = await DbActions(client).validateTeamKey(options)
+  
+  if(response.length == 0) {
+    console.log("Clave no existe")
+  }
+  else { 
+    console.log("response ++++")
+    console.log(response)
+    data.valid = true
+    options.teamId = response[0].id
+    const response2 = await DbActions(client).updateTeamPlayer(options)
+    if (response2.err) { console.log('error');}
+    else { 
+      console.log(response2)
+      data.result = response[0]
+    }
+  }
+
+  res.send(data)
+
+}
+
+
+// router.post("/joinTeam", (req, res)=> {
+//   const options = {
+//     player: req.body.username,
+//     game_id : req.body.game_id,
+//     key: req.body.key
+//   }
+//   DbActions(client).joinTeam(options, (data)=> {
+//     res.send(data)
+//   })
+
+// })
 
 
 router.post("/checkPlayerInDB", function(req, res) {
