@@ -5,7 +5,6 @@ const DbActions = require('./dbActions');
 const port = 8000
 var server = require('http').Server(app)
 var io = require('socket.io')(server)
-var mysql = require('mysql');
 const dotenv = require('dotenv');
 dotenv.config();
 
@@ -38,15 +37,24 @@ app.use(function(req, res, next) {
 
 app.use(router) 
 
-router.get("/", function(req, res) {
-  console.log("hola desde get")
-  res.send('hola desde get');
-})
+//game app
+router.get("/", res => res.send('hola'))
+router.post("/validateGame", validateGame)
+router.post("/joinUser", joinUser)
+router.post("/joinTeam", joinTeam)
+router.post("/checkPlayerInDB", checkPlayerInDB)
+router.post("/challengeCompleted", challengeCompleted)
 
-/** Retorna un objeto con 2 parámetros: 
+//control center
+router.get("/games", getGamesData)
+router.get("/games/:gameId/players/", getPlayers)
+router.get("/games/:gameId/teams/", getTeams)
+router.get("/deletePlayer/:playerId", deletePlayer)
+
+/** validateGame: Retorna un objeto con 2 parámetros: 
  * - valid (que puede ser true or false)
  * - result */
-router.post("/validateGame", (req, res)=> {
+function validateGame (req, res) {
   const pin = req.body.pin
   DbActions(client).getGameData(pin, (response)=> {
     const data = {
@@ -56,10 +64,8 @@ router.post("/validateGame", (req, res)=> {
     console.log("/validateGame: "+data)
     res.send(data)
   })
-})
+}
 
-router.post("/joinUser", joinUser)
-router.post("/joinTeam", joinTeam)
 
 async function joinUser(req, res){
   const options = {
@@ -73,14 +79,12 @@ async function joinUser(req, res){
 
   let response = await DbActions(client).checkPlayerInDB(options)
   if(response.length > 0) {
-    console.log("Nombre duplicado")
     data.duplicated = true 
   }
   else { 
     let response2 = await DbActions(client).insertNewPlayer(options)
     if (response2.err) { console.log('error');}
     else { 
-      console.log(response2)
       data.result = response2 
     }
   }
@@ -125,53 +129,67 @@ async function joinTeam(req, res) {
   }
 
   res.send(data)
-
 }
 
-
-// router.post("/joinTeam", (req, res)=> {
-//   const options = {
-//     player: req.body.username,
-//     game_id : req.body.game_id,
-//     key: req.body.key
-//   }
-//   DbActions(client).joinTeam(options, (data)=> {
-//     res.send(data)
-//   })
-
-// })
-
-
-router.post("/checkPlayerInDB", function(req, res) {
+function checkPlayerInDB(req, res) {
   console.log("checkPlayerInDB:" +req.body.player)
   DbActions(connection).checkPlayerInDB(req.body.player, (data, callback)=> {
     res.send('checkPlayerInDB: '+data);
   })
-})
+}
+
+async function challengeCompleted(req, res){
+  const options = {
+    callengeId: req.body.callengeId,
+    userId : req.body.userId,
+    teamId: req.body.teamId
+  }
+  if (!options.callengeId || !options.userId || !options.teamId ) {
+    console.log("Error: Uno de los campos no está definido")
+    console.log(options)
+    res.send(null)
+  }
+  else {
+    let response = await DbActions(client).insertChallengeCompleted(options)
+    if (response.err) { console.log('error en insertChallengeCompleted: '+response.err); }
+
+    io.sockets.emit('server/challengePassed', options);
+  
+    res.send(response)
+  }
+}
+
+function getGamesData (req, res) {
+  DbActions(client).getGames(response => {
+    console.log("getGamesData: "+JSON.stringify(response, null, 4))
+    res.send(response)
+  })
+}
+
+function getPlayers (req, res) {
+  const gameId = req.params.gameId
+  DbActions(client).getPlayers(gameId, response =>  res.send(response))
+}
+
+function getTeams (req, res) {
+  const gameId = req.params.gameId
+  DbActions(client).getTeams(gameId, response => res.send(response))
+}
+
+function deletePlayer (req, res) {
+  const playerId = req.params.playerId
+  DbActions(client).deletePlayer(playerId, response => res.send(response))
+}
 
 let jugadoresData = []
 
 io.on('connection', function(socket) {
-  //const player = PlayerEventHandler(socket, connection);
 
-  socket.on("nuevoJugador", data => {
-    dbActions.insertNewPlayer(data)
-  })
-  socket.on("app/challengeDone", (data, callback)=> {
-    console.log("socket on 'app/challengeDone': "+data)
-    dbActions.challengeCompleted(data, callback, socket)
-  })
-  socket.on("eliminarJugadorFromCC", (data, callback) => {
-    dbActions.deletePlayer(data, callback)
-  })
   socket.on("coordenadas", data => {
     geoAcciones.sendCoordinates(data, socket)
   })
   socket.on("requestCoordenadasFromCC", (callback) => {
     geoAcciones.sendCoordinatesOfAllTeams(socket, callback)
-  })
-  socket.on("requestUserListFromCC", ()=> {
-    sendAllPlayersData(socket)
   })
   socket.on("error", data => {
     console.log(data)
@@ -179,80 +197,11 @@ io.on('connection', function(socket) {
   
   partidas(socket)
 
-});
+})
 
-
-
-const sendAllPlayersData = (socket) => {
-  var sql = "SELECT * FROM jugadores";
-  connection.query(sql, function (err, result) {
-    if (err) throw err;
-    console.log("Select all from jugadores: ")
-    console.log(result);
-    socket.emit("usersList", result)
-    return result
-  });
-};
 
 const dbActions = {
-  insertNewPlayer : (data) => {
-    //TODO insert ignore - solo si no existe. Tambien hacer unique el nombre
-    const nombre = data.jugador
-    const equipo = data.equipo
-    var sql = "INSERT IGNORE INTO jugadores (nombre_jugador, equipo) VALUES ('"+nombre+"', '"+equipo+"')";
-    connection.query(sql, function (err, result) {
-      if (err) throw err;
-      console.log("1 record insert en 'jugadores' -> nombre: '"+nombre+"'");
-    })
-  },
 
-  deletePlayer : (nombreJugador, callback) => {
-    var sql = "DELETE FROM jugadores WHERE nombre_jugador = '"+nombreJugador+"'";
-    console.log("sql: "+sql)
-    connection.query(sql, function (err, result) {
-      if (err) throw err;
-      console.log("Jugador "+nombreJugador+" eliminado.");
-      callback(true)
-    });
-  },
-
-  challengeCompleted : (data, callback, socket) => {
-    const prueba = data.pruebaId
-    const jugador = data.nombre
-    const equipo = data.team
-    var sql = "INSERT IGNORE INTO pruebas_x_jugador (prueba, jugador, equipo) VALUES ('"+prueba+"', '"+jugador+"', '"+equipo+"')";
-    connection.query(sql, function (err, result) {
-      if (err) throw err;
-      console.log("1 record insert en pruebas_x_jugador -> prueba: '"+prueba+"', jugador: '"+jugador+"'");
-    });
-
-    const numJugadores = {
-      total : null,
-      pruebaCompletada : null
-    }
-    dbActions.getJugadoresEquipo(equipo).then(function(jugadores) {
-      dbActions.getJugadoresPruebaCompletada(prueba, equipo).then(function(jugadoresCompletados) {
-        const jugadoresRestantes = jugadores-jugadoresCompletados
-        console.log("Emitimos socket 'server/playersLeftToComplete' -> Prueba: "+prueba+" - jugadoresRestantes: "+jugadoresRestantes)
-            //to emit to all sockets:
-        io.sockets.emit('server/playersLeftToComplete', jugadoresRestantes);
-     //   socket.emit("server/playersLeftToComplete", jugadoresRestantes)
-        callback(jugadoresRestantes)
-      })
-    })
-  },
-
-  getJugadoresEquipo : (equipo) => {
-    var sql = "SELECT * FROM jugadores WHERE equipo='"+equipo+"'";
-    return new Promise(function(resolve, reject) {
-      // Do async job
-      connection.query(sql, function (err, result) {
-        console.log("jugadores total: "+result.length);
-        if (err) reject(err);
-        else resolve(result.length);
-      });
-    })
-  },
   getJugadoresPruebaCompletada : (prueba, equipo) => {
     var sql = "SELECT * FROM pruebas_x_jugador WHERE equipo='"+equipo+"' AND prueba='"+prueba+"'";
     return new Promise(function(resolve, reject) {
@@ -261,18 +210,8 @@ const dbActions = {
         console.log("jugadores que han completado: "+result.length);
         if (err) reject(err);
         else resolve(result.length);
-      });
+      })
     })
-  },
-
-  getPartidas : (callback) => {
-    var sql = "SELECT id, nombre_partida, clave FROM partidas"
-    console.log(sql)
-    connection.query(sql, function (err, result) {
-      if (err) throw err;
-      console.log("result getPartidas: "+JSON.stringify(result, null, 4))
-      callback(result)
-    });
   },
 
   addPartida : (data) => {
@@ -287,8 +226,6 @@ const dbActions = {
     });
   }
 }
-
-
 
 const geoAcciones = {
 //Funcion que detecta si es un nuevo equipo. En ese caso, devuelve true
@@ -362,15 +299,11 @@ const geoAcciones = {
         const allData = JSON.stringify(myArray)
         callback(allData)
       }
-      
     }
 }
 
 //sockets para la creación y gestión de partidas
 const partidas = (socket) => {
-  socket.on("requestPartidasFromCC", callback => {
-    dbActions.getPartidas(callback)
-  })
   socket.on("addNuevaPartida", data => {
     dbActions.addPartida(data)
   })
@@ -381,5 +314,4 @@ io = io.listen(server)
 server.listen(port, () => {
   console.log('We are live on port '+port);
 })
-
 

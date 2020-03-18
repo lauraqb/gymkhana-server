@@ -61,9 +61,54 @@ var DbActions = (client) => {
       client.query(queryText, (err, result) => {
         console.log(err ? err.stack : "Updated player id "+userId)
         resolve(result.fields)
-        //todo devolver id del jugador insertado
-        //cb(true)
       })
+    })
+  }
+
+  const insertChallengeCompleted = (options) => {
+    return new Promise(resolve => {
+      const callengeId = options.callengeId
+      const userId = options.userId
+      const queryText = "INSERT INTO public.challenges_completed(id, player_id) VALUES ('"+callengeId+"', "+userId+");"
+      console.log(queryText)
+      client.query(queryText, (err, result) => {
+        console.log(err ? err.stack : "Insertado jugador "+options.username)
+        resolve(result.rows[0])
+      })
+    })
+  }
+
+  const getGames = (callback) => {
+    const sql = "SELECT id, name, pin FROM games"
+    console.log(sql)
+    client.query(sql, function (err, result) {
+      if (err) throw err
+      callback(result.rows)
+    })
+  }
+
+  const getPlayers = (game_id, callback) => {
+    var sql = "SELECT * FROM players WHERE game_id="+game_id
+    client.query(sql, function (err, result) {
+      if (err) throw err
+      callback(result.rows)
+    })
+  }
+
+  const getTeams = (game_id, callback) => {
+    var sql = "SELECT * FROM teams WHERE game_id="+game_id
+    client.query(sql, function (err, result) {
+      if (err) throw err
+      callback(result.rows)
+    })
+  }
+
+  const deletePlayer = (playerId, callback) => {
+    var sql = "DELETE FROM players WHERE id = '"+playerId+"'"
+    client.query(sql, function (err, result) {
+      if (err) throw err
+      //callback(result.rows) TODO qué devolver?
+      callback(true)
     })
   }
 
@@ -71,8 +116,13 @@ var DbActions = (client) => {
     getGameData : getGameData,
     checkPlayerInDB : checkPlayerInDB,
     insertNewPlayer : insertNewPlayer,
-    validateTeamKey: validateTeamKey,
-    updateTeamPlayer: updateTeamPlayer
+    validateTeamKey : validateTeamKey,
+    updateTeamPlayer : updateTeamPlayer,
+    insertChallengeCompleted : insertChallengeCompleted,
+    getGames : getGames,
+    getPlayers : getPlayers,
+    getTeams : getTeams,
+    deletePlayer : deletePlayer,
   }
 }
 
