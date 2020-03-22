@@ -61,7 +61,7 @@ function validateGame (req, res) {
       valid : response.length === 0 ? false : true,
       result : response.length === 0 ? null : response[0]
     }
-    console.log("/validateGame: "+data)
+    console.log("/validateGame")
     res.send(data)
   })
 }
@@ -116,8 +116,6 @@ async function joinTeam(req, res) {
     console.log("Clave no existe")
   }
   else { 
-    console.log("response ++++")
-    console.log(response)
     data.valid = true
     options.teamId = response[0].id
     const response2 = await DbActions(client).updateTeamPlayer(options)
@@ -127,15 +125,15 @@ async function joinTeam(req, res) {
       data.result = response[0]
     }
   }
-
   res.send(data)
 }
 
 function checkPlayerInDB(req, res) {
-  console.log("checkPlayerInDB:" +req.body.player)
-  DbActions(connection).checkPlayerInDB(req.body.player, (data, callback)=> {
-    res.send('checkPlayerInDB: '+data);
-  })
+  //TODO, lo necesito esto?
+  // console.log("checkPlayerInDB:" +req.body.player)
+  // DbActions(connection).checkPlayerInDB(req.body.player, (data, callback)=> {
+  //   res.send('checkPlayerInDB: '+data);
+  // })
 }
 
 async function challengeCompleted(req, res){
@@ -190,9 +188,6 @@ io.on('connection', function(socket) {
   })
   socket.on("requestCoordenadasFromCC", (callback) => {
     geoAcciones.sendCoordinatesOfAllTeams(socket, callback)
-  })
-  socket.on("error", data => {
-    console.log(data)
   })
   
   partidas(socket)
@@ -255,16 +250,19 @@ const geoAcciones = {
       return hasMoved
     },
 
-    sendCoordinates : (data, socket) => {
-      if (!data.nombre) {
-        console.log("Error. El campo nombre tiene que estar definido")
-        return
-      } 
-
-      data.latitude = data.latitude.toFixed(4);
-      data.longitude = data.longitude.toFixed(4);
+    sendCoordinates : (options, socket) => {
+      if (!options.playerId) return console.error("Error. El campo nombre tiene que estar definido")
+      const data = {
+        playerId : options.playerId,
+        latitude : options.latitude.toFixed(4),
+        longitude : options.longitude.toFixed(4),
+      }
+      console.log("sendCoordinates()")
+      socket.broadcast.emit("coordenadasFromServer", data)
+      return
+      
       let jugadorNuevo = false
-      if (!jugadoresData[data.nombre]) {
+      if (!jugadoresData[options.nombre]) {
         jugadorNuevo = true
         geoAcciones.addJugadorNuevo(data)
       }
@@ -272,12 +270,35 @@ const geoAcciones = {
       const jugadorSeMueve = geoAcciones.checkJugadorEnMovimiento(data)
       //si es un nuevo equipo o si las coordenadas han cambiado entonces las enviamos al centro de control
       if(jugadorNuevo || jugadorSeMueve) {
-        if (jugadorNuevo) console.log('El jugador '+data.nombre+' se ha conectado. Enviamos coordenadas.')
-        if (jugadorSeMueve) console.log("El jugador: "+ data.nombre+" se mueve")
+        // if (jugadorNuevo) console.log('El jugador '+data.nombre+' se ha conectado. Enviamos coordenadas.')
+        // if (jugadorSeMueve) console.log("El jugador: "+ data.nombre+" se mueve")
         
         socket.broadcast.emit("coordenadasFromServer", data)
       }
     },
+    // sendCoordinates : (data, socket) => {
+    //   if (!data.playerId) {
+    //     console.log("Error. El campo nombre tiene que estar definido")
+    //     return
+    //   } 
+
+    //   data.latitude = data.latitude.toFixed(4);
+    //   data.longitude = data.longitude.toFixed(4);
+    //   let jugadorNuevo = false
+    //   if (!jugadoresData[data.nombre]) {
+    //     jugadorNuevo = true
+    //     geoAcciones.addJugadorNuevo(data)
+    //   }
+
+    //   const jugadorSeMueve = geoAcciones.checkJugadorEnMovimiento(data)
+    //   //si es un nuevo equipo o si las coordenadas han cambiado entonces las enviamos al centro de control
+    //   if(jugadorNuevo || jugadorSeMueve) {
+    //     if (jugadorNuevo) console.log('El jugador '+data.nombre+' se ha conectado. Enviamos coordenadas.')
+    //     if (jugadorSeMueve) console.log("El jugador: "+ data.nombre+" se mueve")
+        
+    //     socket.broadcast.emit("coordenadasFromServer", data)
+    //   }
+    // },
     sendCoordinatesOfAllTeams : (socket, callback) => {
       console.log("El Centro de Control está pidiendo las coordenadas. jugadoresData: ")
       console.log(jugadoresData)
