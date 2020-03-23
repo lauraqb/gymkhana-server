@@ -7,7 +7,6 @@ var server = require('http').Server(app)
 var io = require('socket.io')(server)
 const dotenv = require('dotenv');
 dotenv.config();
-
 const { Client } = require('pg')
 
 const client = new Client({
@@ -22,9 +21,17 @@ client.connect(err => {
   if (err) {
     console.error('connection error', err.stack)
   } else {
-    console.log('connected')
+    console.log(time()+'connected')
   }
 })
+
+const time = () => {
+  let date_ob = new Date();
+  let hours = date_ob.getHours()
+  let minutes = date_ob.getMinutes()
+  //let seconds = date_ob.getSeconds()
+  return "[" + hours + ":" + minutes + "] "
+}
 
 app.use(express.urlencoded())
 app.use(express.json())
@@ -38,7 +45,7 @@ app.use(function(req, res, next) {
 app.use(router) 
 
 //game app
-router.get("/", res => res.send('hola'))
+router.get("/", (req, res) => res.send('hola'))
 router.post("/validateGame", validateGame)
 router.post("/joinUser", joinUser)
 router.post("/joinTeam", joinTeam)
@@ -61,7 +68,7 @@ function validateGame (req, res) {
       valid : response.length === 0 ? false : true,
       result : response.length === 0 ? null : response[0]
     }
-    console.log("/validateGame")
+    console.log(time()+"/validateGame")
     res.send(data)
   })
 }
