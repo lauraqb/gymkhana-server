@@ -38,6 +38,7 @@ app.use(express.json())
 app.use(function(req, res, next) {
   //Es para evitar CORS problem con el cliente
   res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", "POST, PUT, GET, OPTIONS");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
   next();
 });
@@ -56,6 +57,8 @@ router.post("/challengeCompleted", challengeCompleted)
 router.get("/games", getGamesData)
 router.get("/games/:gameId/players/", getPlayers)
 router.get("/games/:gameId/teams/", getTeams)
+router.get("/games/:gameId/challenges/", getGameDataWithId)
+router.put("/games/:gameId/updateChallenges/", updateGameChallenges)
 router.get("/deletePlayer/:playerId", deletePlayer)
 
 /** validateGame: Retorna un objeto con 2 parámetros: 
@@ -107,19 +110,20 @@ async function joinTeam(req, res) {
     teamId: null
   }
   const data = {
+    error: null,
     valid : false,
     result : null
   }
-
-  if (!options.userId || !options.gameId || !options.userId) {
-    // res.send(data.error)
+  if (!options.userId || !options.gameId || !options.key) {
     console.log(options)
+    data.error = "Uno de los campos 'userId, gameId o key' es undefined"
+    res.send(data)
     return
   }
 
   const response = await DbActions(client).validateTeamKey(options)
-  
   if(response.length == 0) {
+    data.valid = false
     console.log("Clave no existe")
   }
   else { 
@@ -165,7 +169,7 @@ async function challengeCompleted(req, res){
 }
 
 function getGamesData (req, res) {
-  DbActions(client).getGames(response => {
+  DbActions(client).getAllGames(response => {
     console.log("getGamesData: "+JSON.stringify(response, null, 4))
     res.send(response)
   })
@@ -179,6 +183,27 @@ function getPlayers (req, res) {
 function getTeams (req, res) {
   const gameId = req.params.gameId
   DbActions(client).getTeams(gameId, response => res.send(response))
+}
+
+function getGameDataWithId (req, res) {
+  console.log("getGameDataWithId()")
+  const gameId = req.params.gameId
+  DbActions(client).getGameWithId(gameId, response => {
+    // console.log("getGameData: "+JSON.stringify(response, null, 4))
+    res.send(response)
+  })
+}
+
+function updateGameChallenges (req, res) {
+  console.log("updateGameChallenges")
+  const options = {
+    gameId : req.params.gameId,
+    challenges :JSON.stringify(req.body)
+  } 
+  DbActions(client).updateGameChallenges(options, response => {
+    console.log("getGameData: "+JSON.stringify(response, null, 4))
+    res.send(response)
+  })
 }
 
 function deletePlayer (req, res) {

@@ -1,9 +1,9 @@
 var DbActions = (client) => {
-  var getGameData = (pin, callback) => {
+  const getGameData = (pin, callback) => {
     if(!pin || typeof pin !== "string") {
       return console.log("PIN incorrecto")
     }
-    var queryText = "SELECT id, name, pin FROM games WHERE pin ='"+pin+"'"
+    var queryText = "SELECT id, name, pin, info FROM games WHERE pin ='"+pin+"'"
     console.log(queryText)
     client.query(queryText, (err, result) => {
       if (err) throw err
@@ -43,12 +43,12 @@ var DbActions = (client) => {
     return new Promise(resolve => { 
       const key = options.key
       const gameId = options.gameId
-        const queryText = "SELECT * FROM teams WHERE key ='"+key+"' AND game_id ='"+gameId+"'"
-        console.log(queryText)
-        client.query(queryText, function (err, result) {
-          if (err) throw err;
-          resolve(result.rows) 
-        })
+      const queryText = "SELECT * FROM teams WHERE key ='"+key+"' AND game_id ='"+gameId+"'"
+      console.log(queryText)
+      client.query(queryText, function (err, result) {
+        if (err) throw err;
+        resolve(result.rows) 
+      })
     })
   }
 
@@ -78,7 +78,7 @@ var DbActions = (client) => {
     })
   }
 
-  const getGames = (callback) => {
+  const getAllGames = (callback) => {
     const sql = "SELECT id, name, pin FROM games"
     console.log(sql)
     client.query(sql, function (err, result) {
@@ -95,11 +95,36 @@ var DbActions = (client) => {
     })
   }
 
-  const getTeams = (game_id, callback) => {
-    var sql = "SELECT * FROM teams WHERE game_id="+game_id
+  const getTeams = (gameId, callback) => {
+    var sql = "SELECT * FROM teams WHERE game_id="+gameId
     client.query(sql, function (err, result) {
       if (err) throw err
       callback(result.rows)
+    })
+  }
+
+  const getGameWithId = (gameId, callback) => {
+    if (!gameId) return "Error: gameId not defined"
+    var sql = "SELECT * FROM games WHERE id="+gameId
+    console.log(sql)
+    client.query(sql, function (err, result) {
+      if (err) throw err
+      callback(result.rows[0])
+    })
+  },
+  
+  updateGameChallenges = (options, callback) => {
+    const gameId = options.gameId
+    const challenges = options.challenges
+    const queryText = "UPDATE games SET info = '"+options.challenges+"' WHERE id="+gameId+";"
+    console.log(queryText)
+    client.query(queryText, (err, result) => {
+      console.log(err ? err.stack : "Updated game id "+gameId)
+      const data = {
+        error : err ? err.stack : false,
+        result : result
+      }
+      callback(data)
     })
   }
 
@@ -119,10 +144,12 @@ var DbActions = (client) => {
     validateTeamKey : validateTeamKey,
     updateTeamPlayer : updateTeamPlayer,
     insertChallengeCompleted : insertChallengeCompleted,
-    getGames : getGames,
+    getAllGames : getAllGames,
     getPlayers : getPlayers,
     getTeams : getTeams,
+    getGameWithId : getGameWithId,
     deletePlayer : deletePlayer,
+    updateGameChallenges : updateGameChallenges
   }
 }
 
