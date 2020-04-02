@@ -36,7 +36,7 @@ const time = () => {
 app.use(express.urlencoded())
 app.use(express.json())
 app.use(function(req, res, next) {
-  //Es para evitar CORS problem con el cliente
+  //Para evitar CORS problem con el cliente:
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Methods", "POST, PUT, GET, OPTIONS");
   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
@@ -80,25 +80,18 @@ function validateGame (req, res) {
 async function joinUser(req, res){
   const options = {
     username: req.body.username,
-    game_id : req.body.game_id,
+    gameId : req.body.gameId,
   }
-  const data = {
-    duplicated : false,
-    result : null
-  }
-
-  let response = await DbActions(client).checkPlayerInDB(options)
-  if(response.length > 0) {
-    data.duplicated = true 
-  }
-  else { 
-    let response2 = await DbActions(client).insertNewPlayer(options)
-    if (response2.err) { console.log('error');}
-    else { 
-      data.result = response2 
+  DbActions(client).insertNewPlayer(options).then( response => res.send({result: response}) )
+  .catch( error => {
+    if(error.code == "23505")
+      res.send({duplicated: true})
+    else {
+      console.log(error)
+      res.send({error: error})
     }
-  }
-  res.send(data)
+  })
+  
 }
 
 async function joinTeam(req, res) {

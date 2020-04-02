@@ -14,10 +14,11 @@ var DbActions = (client) => {
   
   /*** Join User */
   const checkPlayerInDB = (options) => {
-    return new Promise(resolve => { 
+    return new Promise((resolve, reject) => { 
       const username = options.username
-      const gameId = options.game_id
-      if(typeof username !== "string") return console.log("nombreJugador is a: "+typeof pin)
+      const gameId = options.gameId
+      if(!username || !gameId) reject("Uno de los parámetros no está definido: username: "+username+" ,gameId: "+gameId)
+      //if(typeof username !== "string") return console.log("nombreJugador is a: "+typeof pin)
       var queryText = "SELECT name FROM players WHERE name ='"+username+"' AND game_id='"+gameId+"'"
       console.log(queryText)
       client.query(queryText, function (err, result) {
@@ -27,15 +28,19 @@ var DbActions = (client) => {
     })
   }
 
+  // const insertNewPlayer = (options) => {
+  //   return new Promise(resolve => { 
+  //     const queryText = "INSERT INTO public.players(name, game_id) VALUES ('"+options.username+"', "+options.game_id+") RETURNING *;"
+  //     console.log(queryText)
+  //     client.query(queryText, (err, result) => {
+  //       console.log(err ? err.stack : "Insertado jugador "+options.username)
+  //       resolve(result.rows[0])
+  //     })
+  //   })
+  // }
   const insertNewPlayer = (options) => {
-    return new Promise(resolve => { 
-      const queryText = "INSERT INTO public.players(name, game_id) VALUES ('"+options.username+"', "+options.game_id+") RETURNING *;"
-      console.log(queryText)
-      client.query(queryText, (err, result) => {
-        console.log(err ? err.stack : "Insertado jugador "+options.username)
-        resolve(result.rows[0])
-      })
-    })
+      const queryText = "INSERT INTO public.players(name, game_id) VALUES ('"+options.username+"', "+options.gameId+") RETURNING *;"
+      return client.query(queryText).then(res => res.rows[0])
   }
 
   /** Join Team */
@@ -43,9 +48,9 @@ var DbActions = (client) => {
     return new Promise(resolve => { 
       const key = options.key
       const gameId = options.gameId
-      const queryText = "SELECT * FROM teams WHERE key ='"+key+"' AND game_id ='"+gameId+"'"
+      const queryText = "SELECT * FROM teams WHERE key = $1 AND game_id = $2"
       console.log(queryText)
-      client.query(queryText, function (err, result) {
+      client.query(queryText, [key, gameId], function (err, result) {
         if (err) throw err;
         resolve(result.rows) 
       })
