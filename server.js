@@ -25,6 +25,8 @@ client.connect(err => {
   }
 })
 
+const dba = DbActions(client)
+
 const time = () => {
   let date_ob = new Date();
   let hours = date_ob.getHours()
@@ -50,8 +52,10 @@ router.get("/", (req, res) => res.send('hola'))
 router.post("/validateGame", validateGame)
 router.post("/joinUser", joinUser)
 router.post("/joinTeam", joinTeam)
-router.post("/checkPlayerInDB", checkPlayerInDB)
+router.post("/challengeData", getChallengeData)
+//router.get("/checkChallengeCompleted", checkChallengeCompleted)
 router.post("/challengeCompleted", challengeCompleted)
+router.post("/getPoints", getPoints)
 
 //control center
 router.get("/games", getGamesData)
@@ -61,130 +65,134 @@ router.get("/games/:gameId/challenges/", getGameDataWithId)
 router.put("/games/:gameId/updateChallenges/", updateGameChallenges)
 router.get("/deletePlayer/:playerId", deletePlayer)
 
-/** validateGame: Retorna un objeto con 2 parámetros: 
- * - valid (que puede ser true or false)
- * - result */
 function validateGame (req, res) {
+  console.log(time()+"validateGame()")
   const pin = req.body.pin
-  DbActions(client).getGameData(pin, (response)=> {
-    const data = {
+  dba.getGameDataWithPin(pin).then( response => res.send({
       valid : response.length === 0 ? false : true,
       result : response.length === 0 ? null : response[0]
-    }
-    console.log(time()+"/validateGame")
-    res.send(data)
+    }))
+  .catch( error => {
+      console.log(error)
+      res.send({error: error})
   })
 }
 
-
-async function joinUser(req, res){
+function joinUser (req, res) {
+  console.log(time()+"joinUser()")
   const options = {
     username: req.body.username,
     gameId : req.body.gameId,
   }
-  DbActions(client).insertNewPlayer(options).then( response => res.send({result: response}) )
+  dba.insertNewPlayer(options).then( response => res.send({result: response}) )
   .catch( error => {
-    if(error.code == "23505")
-      res.send({duplicated: true})
+    if(error.code == "23505") res.send({duplicated: true})
     else {
       console.log(error)
       res.send({error: error})
     }
   })
-  
 }
 
-async function joinTeam(req, res) {
-  console.log("Join Team()")
+function joinTeam (req, res) {
+  console.log("JoinTeam()")
   const options = {
     userId: req.body.userId,
     gameId : req.body.gameId,
     key: req.body.key,
-    teamId: null
-  }
-  const data = {
-    error: null,
-    valid : false,
-    result : null
-  }
-  if (!options.userId || !options.gameId || !options.key) {
-    console.log(options)
-    data.error = "Uno de los campos 'userId, gameId o key' es undefined"
-    res.send(data)
-    return
   }
 
-  const response = await DbActions(client).validateTeamKey(options)
-  if(response.length == 0) {
-    data.valid = false
-    console.log("Clave no existe")
-  }
-  else { 
-    data.valid = true
-    options.teamId = response[0].id
-    const response2 = await DbActions(client).updateTeamPlayer(options)
-    if (response2.err) { console.log('error');}
-    else { 
-      console.log(response2)
-      data.result = response[0]
-    }
-  }
-  res.send(data)
+  dba.updateTeamPlayer(options).then(r => {
+    dba.getTeamDataWithId(options).then(response => {
+      res.send( { 
+        invalidKey: response.length == 0 ? true : false, 
+        result: response.length == 0 ? null : response[0] 
+      })
+    })
+  })
+  .catch(error => res.send( {error: error}))
 }
 
-function checkPlayerInDB(req, res) {
-  //TODO, lo necesito esto?
-  // console.log("checkPlayerInDB:" +req.body.player)
-  // DbActions(connection).checkPlayerInDB(req.body.player, (data, callback)=> {
-  //   res.send('checkPlayerInDB: '+data);
-  // })
-}
-
-async function challengeCompleted(req, res){
+function getChallengeData (req, res) {
+  console.log(time()+"getChallengeData()")
   const options = {
-    callengeId: req.body.callengeId,
-    userId : req.body.userId,
-    teamId: req.body.teamId
+    userId: req.body.userId,
+    gameId : req.body.gameId,
   }
-  if (!options.callengeId || !options.userId || !options.teamId ) {
-    console.log("Error: Uno de los campos no está definido")
-    console.log(options)
-    res.send(null)
-  }
-  else {
-    let response = await DbActions(client).insertChallengeCompleted(options)
-    if (response.err) { console.log('error en insertChallengeCompleted: '+response.err); }
-
-    io.sockets.emit('server/challengePassed', options);
-  
-    res.send(response)
-  }
-}
-
-function getGamesData (req, res) {
-  DbActions(client).getAllGames(response => {
-    console.log("getGamesData: "+JSON.stringify(response, null, 4))
-    res.send(response)
+  dba.getCurrentChallengeData(options).then( response => res.send({result: response}))
+  .catch( error => {
+      console.log(error)
+      res.send({error: error})
   })
 }
 
+// function checkChallengeCompleted(req, res){
+//   console.log(time()+"challengeCompleted()")
+//   const options = {
+//     callengeId: req.body.callengeId,
+//     userId : req.body.userId,
+//     gameId: req.body.gameId,
+//     teamId: req.body.teamId,
+//     speedReward: req.body.speedReward
+//   }
+
+//   dba.checkChallengeCompleted(options).then(response => res.send({challengeCompleted: response.length == 0 ? false : true}))
+//   .catch(error => {
+//     console.log(error); res.send( {error: error})
+//   })
+//     //io.sockets.emit('server/challengePassed', options);
+// }
+
+function getPoints (req, res) {
+  console.log(time()+"getPoints()")
+  const options = {
+    userId: req.body.userId,
+    gameId : req.body.gameId,
+  }
+  dba.getPointsPlayer(options).then( response => res.send(response))
+  .catch( error => {
+      console.log(error)
+      res.send({error: error})
+  })
+}
+
+function challengeCompleted(req, res){
+  console.log(time()+"challengeCompleted()")
+  const options = {
+    callengeId: req.body.callengeId,
+    userId : req.body.userId,
+    gameId: req.body.gameId,
+    teamId: req.body.teamId,
+    speedReward: req.body.speedReward
+  }
+
+  dba.insertChallengeCompleted(options).then(response => res.send(response))
+  .catch(error => {
+    console.log(error); res.send( {error: error})
+  })
+    //io.sockets.emit('server/challengePassed', options);
+}
+
+//Control Center
+function getGamesData (req, res) {
+  console.log(time()+"CC/ getGamesData()")
+  dba.getAllGames().then(response => res.send(response))
+}
+
 function getPlayers (req, res) {
-  const gameId = req.params.gameId
-  DbActions(client).getPlayers(gameId, response =>  res.send(response))
+  console.log(time()+"CC/ getPlayers()")
+  dba.getPlayers(req.params.gameId).then(response =>  res.send(response))
 }
 
 function getTeams (req, res) {
-  const gameId = req.params.gameId
-  DbActions(client).getTeams(gameId, response => res.send(response))
+  console.log(time()+"CC/ getTeams()")
+  dba.getTeams(req.params.gameId, response => res.send(response))
 }
 
 function getGameDataWithId (req, res) {
   console.log("getGameDataWithId()")
-  const gameId = req.params.gameId
-  DbActions(client).getGameWithId(gameId, response => {
-    // console.log("getGameData: "+JSON.stringify(response, null, 4))
-    res.send(response)
-  })
+  options = { gameId : req.params.gameId}
+  dba.getGameWithId(gameId).then(response => res.send(response))
 }
 
 function updateGameChallenges (req, res) {
@@ -193,15 +201,14 @@ function updateGameChallenges (req, res) {
     gameId : req.params.gameId,
     challenges :JSON.stringify(req.body)
   } 
-  DbActions(client).updateGameChallenges(options, response => {
-    console.log("getGameData: "+JSON.stringify(response, null, 4))
+  dba.updateGameChallenges(options, response => {
     res.send(response)
   })
 }
 
 function deletePlayer (req, res) {
   const playerId = req.params.playerId
-  DbActions(client).deletePlayer(playerId, response => res.send(response))
+  dba.deletePlayer(playerId, response => res.send(response))
 }
 
 let jugadoresData = []
