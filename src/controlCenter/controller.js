@@ -12,7 +12,7 @@ const time = () => {
 exports.getGamesData = function (req, res) {
     console.log(time()+"CC/ getGamesData()")
     dba.getAllGames().then(response => res.send(response))
-  }
+}
   
 exports.getPlayers = function (req, res) {
     console.log(time()+"CC/ getPlayers()")
@@ -61,7 +61,7 @@ exports.addNewGame = function (req, res) {
 
 exports.getAllCoordinates = function (req, res) {
     //obtener las coordenadas de un cache en jugadoresData
-    console.log("El Centro de Control está pidiendo las coordenadas. jugadoresData: ")
+    console.log("El Centro de Control pide las coordenadas.")
     const jugadoresData = null //esto tiene que ser igual al cache
     if(!jugadoresData || jugadoresData.length ) {
         res.send(null)
@@ -80,7 +80,5 @@ exports.getAllCoordinates = function (req, res) {
         }
         //const allData = JSON.stringify(myArray)
         res.send(myArray)
-        }
     }
-    
 }

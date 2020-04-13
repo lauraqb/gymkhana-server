@@ -41,20 +41,23 @@ exports.joinUser = function(req, res) {
 exports.joinTeam = function(req, res) {
     console.log("JoinTeam()")
     const options = {
-      userId: req.body.userId,
+      userId: req.body.userid,
       gameId : req.body.gameId,
       key: req.body.key,
     }
-  
-    dba.updateTeamPlayer(options).then(r => {
-      dba.getTeamDataWithId(options).then(response => {
-        res.send( { 
-          invalidKey: response.length == 0 ? true : false, 
-          result: response.length == 0 ? null : response[0] 
-        })
-      })
+    console.log(options)
+    if(!options.userId || !options.gameId ) {
+      res.send( {error: "userid o gameId undefined"})
+      return
+    }
+    dba.updateTeamPlayer(options).then(response => {
+      res.send( { 
+            invalidKey: response.length == 0 ? true : false, 
+            result: response.length == 0 ? null : response
+          })
     })
-    .catch(error => res.send( {error: error}))
+    .catch(error => { console.log(error)
+      res.send( {error: error})})
 }
   
 exports.getChallengeData = function(req, res) {
