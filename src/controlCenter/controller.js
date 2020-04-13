@@ -58,3 +58,29 @@ exports.addNewGame = function (req, res) {
         console.log("1 record insert en partidas -> nombrePartida: '"+nombrePartida+"'")
     })
 }
+
+exports.getAllCoordinates = function (req, res) {
+    //obtener las coordenadas de un cache en jugadoresData
+    console.log("El Centro de Control está pidiendo las coordenadas. jugadoresData: ")
+    const jugadoresData = null //esto tiene que ser igual al cache
+    if(!jugadoresData || jugadoresData.length ) {
+        res.send(null)
+    }
+    else {
+        console.log(jugadoresData)
+        let myArray = []
+        for (var key in jugadoresData) {
+          var data = { 
+            jugador: key,
+            equipo: jugadoresData[key].equipo,
+            latitude : jugadoresData[key].latitude,
+            longitude : jugadoresData[key].longitude
+          }
+          myArray.push(data)
+        }
+        //const allData = JSON.stringify(myArray)
+        res.send(myArray)
+        }
+    }
+    
+}

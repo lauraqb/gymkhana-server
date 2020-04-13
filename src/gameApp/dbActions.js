@@ -34,7 +34,7 @@ var DbActions = (client) => {
           return challengeData
         })
       })
-  }
+    }
   
     function getPointsPlayer(options) {
       const queryText = "SELECT c.*, (SELECT player_id FROM challenges_completed WHERE id = $1 AND game_id = $2 ORDER BY timestamp ASC LIMIT 1) AS best_player,"+
@@ -48,7 +48,6 @@ var DbActions = (client) => {
         return {return: result, points: points}
       })
     }
-  
     
     const checkIfBestPlayer = (options) => {
       const queryText = "SELECT * FROM challenges_completed WHERE id = $1 AND game_id = $2 ORDER BY timestamp ASC LIMIT 1;"
@@ -67,7 +66,6 @@ var DbActions = (client) => {
           else return {bestPlayer: false}
         })
     }
-  
   
     return {
       getGameDataWithPin : getGameDataWithPin,

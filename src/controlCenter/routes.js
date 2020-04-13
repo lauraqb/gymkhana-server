@@ -12,6 +12,6 @@ router.get("/games/:gameId/challenges/", ccController.getGameDataWithId)
 router.put("/games/:gameId/updateChallenges/", ccController.updateGameChallenges)
 router.get("/deletePlayer/:playerId", ccController.deletePlayer) //TODO .delete
 router.get("/newGame/", ccController.addNewGame) //TODO .delete
-//router.get("/coordinates", getAllCoordinates)
+router.get("/coordinates", ccController.getAllCoordinates)
 
 module.exports = router
