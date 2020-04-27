@@ -1,12 +1,7 @@
 const DbActions = require('./dbActions')
 const client = require("../db")
 const dba = DbActions(client)
-const time = () => {
-    let date_ob = new Date()
-    let hours = date_ob.getHours()
-    let minutes = date_ob.getMinutes()
-    return "[" + hours + ":" + minutes + "] "
-}
+const time = require('../utils/time')
 
 // Validate a Pin Game
 exports.validateGame = function (req, res) {
@@ -60,7 +55,7 @@ exports.joinTeam = function(req, res) {
       res.send( {error: error})})
 }
   
-exports.getChallengeData = function(req, res) {
+exports.getCurrentChallengeData = function(req, res) {
     console.log(time()+"getChallengeData()")
     const options = {
       userId: req.body.userId,
@@ -71,6 +66,20 @@ exports.getChallengeData = function(req, res) {
         console.log(error)
         res.send({error: error})
     })
+}
+
+exports.validateAnswer = (req, res) => {
+  const options = {
+    gameId : req.body.gameId,
+    challengeId: req.body.challengeId,
+    answer: req.body.answer
+  }
+  dba.getChallengeSolution(options).then( response => {
+    //if (answer == response) añadir regex para validar que solution contenga la respuesta
+    res.send({
+      valid: options.answer===response.solution.toLowerCase().trim() || options.answer==="---" ? true : false, 
+    })
+  })
 }
   
 exports.getPoints = function(req, res) {
@@ -89,7 +98,7 @@ exports.getPoints = function(req, res) {
 exports.challengeCompleted= function(req, res) {
     console.log(time()+"challengeCompleted()")
     const options = {
-      callengeId: req.body.callengeId,
+      challengeId: req.body.challengeId,
       userId : req.body.userId,
       gameId: req.body.gameId,
       teamId: req.body.teamId,

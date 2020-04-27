@@ -13,8 +13,8 @@ var DbActions = (client) => {
   }
 
   const updateTeamPlayer = (options) => {
-    const queryText = "UPDATE players AS p SET team_id = t.id FROM teams AS t WHERE p.id= $1 AND t.key = $2 RETURNING *;"
-    return client.query(queryText, [options.userId, options.key]).then(res => res.rows[0])
+    const queryText = "UPDATE players AS p SET team_id = t.id FROM teams AS t WHERE p.id= $1 AND t.game_id = $2 AND t.key = $3 RETURNING *;"
+    return client.query(queryText, [options.userId, options.gameId, options.key]).then(res => res.rows[0])
   }
 
   const getCurrentChallengeData = (options) => {
@@ -23,11 +23,17 @@ var DbActions = (client) => {
     return client.query(queryText, [options.gameId, options.userId]).then(res => {
       const challengeId = res.rows[0] ? res.rows[0].id+1 : 1
       return client.query(queryText2, [options.gameId]).then(res2 => {
-        const challengeData = res2.rows[0].info[challengeId]
-        challengeData.id = challengeId
-        return challengeData
+          const challengeData = res2.rows[0].info[challengeId]
+          challengeData.solution = null //para evitar que se envíe este campo al cliente
+          challengeData.id = challengeId
+          return challengeData
       })
     })
+  }
+
+  const getChallengeSolution = (options) => {
+    const queryText = "SELECT info->"+options.challengeId+"->'solution' AS solution FROM games WHERE id = $1"
+    return client.query(queryText, [options.gameId]).then(res => res.rows[0])
   }
 
   function getPointsPlayer(options) {
@@ -36,28 +42,20 @@ var DbActions = (client) => {
     return client.query(queryText, [options.userId, options.gameId]).then(res => {
       const result = res.rows
       let points = result.length
+      console.log("points: "+points)
       for(var i = 0; i < result.length; i++) {
         if(result[i].speedreward && options.userId == result[i].best_player) points++
       }
+      console.log("points2: "+points)
       return {return: result, points: points}
     })
   }
   
-  const checkIfBestPlayer = (options) => {
-    const queryText = "SELECT * FROM challenges_completed WHERE id = $1 AND game_id = $2 ORDER BY timestamp ASC LIMIT 1;"
-    return client.query(queryText, [options.callengeId, options.gameId]).then(res => {
-      if(options.userId == res.rows[0].player_id) return {bestPlayer: true}
-      return {bestPlayer: false}
-    })
-  }
   const insertChallengeCompleted = (options) => {
+    console.log("insert challenge "+options.challengeId)
       const queryText = "INSERT INTO challenges_completed(id, game_id, player_id, timestamp) VALUES ($1, $2, $3, current_timestamp);"
-      const queryText2 = "SELECT * FROM challenges_completed WHERE id = $1 AND game_id = $2 ORDER BY timestamp ASC LIMIT 1;"
-      return client.query(queryText, [options.callengeId, options.gameId, options.userId]).then(res => {
-        if(options.speedReward){
-          return checkIfBestPlayer(options)
-        }
-        else return {bestPlayer: false}
+      return client.query(queryText, [options.challengeId, options.gameId, options.userId]).then(res => {
+        return res.rows[0]
       })
   }
 
@@ -66,6 +64,7 @@ var DbActions = (client) => {
     insertNewPlayer : insertNewPlayer,
     updateTeamPlayer : updateTeamPlayer,
     getCurrentChallengeData : getCurrentChallengeData,
+    getChallengeSolution : getChallengeSolution,
     getPointsPlayer : getPointsPlayer,
     insertChallengeCompleted : insertChallengeCompleted
   }

@@ -1,7 +1,7 @@
 //TODO convertirlo en class?
 const DbActions = (client) => {
 
-  const getAllGames = (callback) => {
+  const getAllGames = () => {
     const queryText = "SELECT id, name, pin FROM games"
     return client.query(queryText).then(res => res.rows)
   }
@@ -11,12 +11,9 @@ const DbActions = (client) => {
     return client.query(queryText, [gameId]).then(res => res.rows)
   }
 
-  const getTeams = (gameId, callback) => {
-    var sql = "SELECT * FROM teams WHERE game_id="+gameId
-    client.query(sql, function (err, result) {
-      if (err) throw err
-      callback(result.rows)
-    })
+  const getTeams = (gameId) => {
+    var queryText = "SELECT * FROM teams WHERE game_id= $1"
+    return client.query(queryText, [gameId]).then(res => res.rows)
   }
 
   const getGameWithId = (options) => {
@@ -39,13 +36,9 @@ const DbActions = (client) => {
     })
   }
 
-  const deletePlayer = (playerId, callback) => {
-    var sql = "DELETE FROM players WHERE id = '"+playerId+"'"
-    client.query(sql, function (err, result) {
-      if (err) throw err
-      //callback(result.rows) TODO qué devolver?
-      callback(true)
-    })
+  const deletePlayer = (playerId) => {
+    var queryText = "DELETE FROM players WHERE id = $1"
+    return client.query(queryText, [playerId]).then(res => res.rows[0])
   }
 
   return {

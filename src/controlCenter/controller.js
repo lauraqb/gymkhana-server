@@ -2,15 +2,10 @@
 const DbActions = require('./dbActions')
 const client = require("../db")
 const dba = DbActions(client)
-const time = () => {
-    let date_ob = new Date()
-    let hours = date_ob.getHours()
-    let minutes = date_ob.getMinutes()
-    return "[" + hours + ":" + minutes + "] "
-}
+const time = require('../utils/time')
 
-exports.getGamesData = function (req, res) {
-    console.log(time()+"CC/ getGamesData()")
+exports.getAllGamesData = function (req, res) {
+    console.log(time()+"CC/ getAllGamesData()")
     dba.getAllGames().then(response => res.send(response))
 }
   
@@ -21,7 +16,7 @@ exports.getPlayers = function (req, res) {
   
 exports.getTeams = function (req, res) {
     console.log(time()+"CC/ getTeams()")
-    dba.getTeams(req.params.gameId, response => res.send(response))
+    dba.getTeams(req.params.gameId).then(response => res.send(response))
 }
 
 exports.getGameDataWithId = function (req, res) {
@@ -43,7 +38,11 @@ exports.updateGameChallenges = function (req, res) {
   
 exports.deletePlayer = function (req, res) {
     const playerId = req.params.playerId
-    dba.deletePlayer(playerId, response => res.send(response))
+    dba.deletePlayer(playerId).then( response => res.send(response))
+    .catch( error => {
+        console.log(error)
+        res.send({error: error})
+    })
 }
 
 //TODO: revisar
