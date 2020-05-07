@@ -16,7 +16,7 @@ client.connect()
     _db = client
 })
 .catch((err) => {
-    console.error('Error connecting: %s', err.stack);
+    console.error('Error connecting to database: %s', err.stack);
 })
 
 module.exports = client
