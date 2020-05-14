@@ -14,7 +14,10 @@ var DbActions = (client) => {
 
   const updateTeamPlayer = (options) => {
     const queryText = "UPDATE players AS p SET team_id = t.id FROM teams AS t WHERE p.id= $1 AND t.game_id = $2 AND t.key = $3 RETURNING *;"
-    return client.query(queryText, [options.userId, options.gameId, options.key]).then(res => res.rows[0])
+    return client.query(queryText, [options.userId, options.gameId, options.key]).then(res => {
+      console.log(res.rows)
+      return res.rows[0]})
+//    return client.query(queryText, [options.userId, options.gameId, options.key]).then(res => res.rows[0])
   }
 
   const getCurrentChallengeData = (options) => {

@@ -46,6 +46,7 @@ exports.joinTeam = function(req, res) {
       return
     }
     dba.updateTeamPlayer(options).then(response => {
+      console.log("updateTeamPlayer: "+response)
       res.send( { 
             invalidKey: response.length == 0 ? true : false, 
             result: response.length == 0 ? null : response

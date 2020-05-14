@@ -10,6 +10,8 @@ const client = new Client({
   port: 5432
 })
 
+if(!process.env.POSTGRESQL_DB_HOST) console.error('Error: Variables de entorno sin definir.')
+
 client.connect()
 .then(() => {
     console.log('connected')
