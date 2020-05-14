@@ -4,25 +4,51 @@ const client = require("../db")
 const dba = DbActions(client)
 const time = require('../utils/time')
 
-exports.getAllGamesData = function (req, res) {
-    console.log(time()+"CC/ getAllGamesData()")
-    dba.getAllGames().then(response => res.send(response))
+exports.getGamesList = function (req, res) {
+    console.log(time()+"CC/ getGamesList()")
+    dba.getGamesList().then(response => res.send(response))
+    .catch( error => {
+        console.log(error)
+        res.send({error: error})
+    })
 }
   
 exports.getPlayers = function (req, res) {
     console.log(time()+"CC/ getPlayers()")
     dba.getPlayers(req.params.gameId).then(response =>  res.send(response))
+    .catch( error => {
+        console.log(error)
+        res.send({error: error})
+    })
 }
   
 exports.getTeams = function (req, res) {
     console.log(time()+"CC/ getTeams()")
     dba.getTeams(req.params.gameId).then(response => res.send(response))
+    .catch( error => {
+        console.log(error)
+        res.send({error: error})
+    })
 }
 
 exports.getGameDataWithId = function (req, res) {
     console.log("getGameDataWithId()")
     options = { gameId : req.params.gameId}
     dba.getGameWithId(options).then(response => res.send(response))
+}
+
+exports.insertNewTeam = function (req, res) {
+    console.log("insertNewTeam()")
+    options = { gameId : 
+        req.params.gameId,
+        teamName: req.body.teamName,
+        teamKey : req.body.teamKey,
+    }
+    dba.insertNewTeam(options).then(response => res.send(response))
+    .catch( error => {
+        console.log(error)
+        res.send({error: error})
+    })
 }
 
 exports.updateGameChallenges = function (req, res) {

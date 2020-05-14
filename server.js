@@ -20,7 +20,7 @@ app.use(function(req, res, next) {
 })
 
 app.use(routerGameApp) 
-app.use(routerCC) 
+app.use('/cc', routerCC) 
 
 sockets.init(server)
 

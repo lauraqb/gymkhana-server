@@ -1,7 +1,7 @@
 //TODO convertirlo en class?
 const DbActions = (client) => {
 
-  const getAllGames = () => {
+  const getGamesList = () => {
     const queryText = "SELECT id, name, pin FROM games"
     return client.query(queryText).then(res => res.rows)
   }
@@ -19,7 +19,15 @@ const DbActions = (client) => {
   const getGameWithId = (options) => {
     var sql = "SELECT * FROM games WHERE id="+options.gameId
     return client.query(sql).then(res => res.rows[0])
-  },
+  }
+
+  const insertNewTeam = (options) => {
+    console.log(options)
+    const queryText = "INSERT INTO teams(game_id, name, key) VALUES ($1, $2, $3) RETURNING *;"
+    return client.query(queryText, [options.gameId, options.teamName, options.teamKey]).then(res => {
+      console.log(res.rows)
+      return res.rows[0]})
+  }
   
   updateGameChallenges = (options, callback) => {
     const gameId = options.gameId
@@ -42,10 +50,11 @@ const DbActions = (client) => {
   }
 
   return {
-    getAllGames : getAllGames,
+    getGamesList : getGamesList,
     getPlayers : getPlayers,
     getTeams : getTeams,
     getGameWithId : getGameWithId,
+    insertNewTeam: insertNewTeam,
     deletePlayer : deletePlayer,
     updateGameChallenges : updateGameChallenges
   }
