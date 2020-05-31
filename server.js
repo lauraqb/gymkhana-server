@@ -19,7 +19,8 @@ app.use(function(req, res, next) {
   next()
 })
 
-app.use(routerGameApp) 
+app.get("/", (req, res) => res.send('hi, gymkhana server'))
+app.use('/game', routerGameApp) 
 app.use('/cc', routerCC) 
 
 sockets.init(server)

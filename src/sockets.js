@@ -3,10 +3,9 @@ const time = require('./utils/time')
 var sockets = {}
 
 const trace = (msg) => {
-
       //console.log(time()+msg)
-  
 }
+
 sockets.init = function (server) {
   // socket.io setup
   var io = require('socket.io').listen(server)
