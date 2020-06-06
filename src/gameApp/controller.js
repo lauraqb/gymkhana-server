@@ -57,7 +57,7 @@ exports.joinTeam = function(req, res) {
 }
   
 exports.getCurrentChallengeData = function(req, res) {
-    console.log(time()+"getChallengeData()")
+    console.log(time()+"getCurrentChallengeData()")
     const options = {
       userId: req.body.userId,
       gameId : req.body.gameId,
