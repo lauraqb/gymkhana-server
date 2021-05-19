@@ -6,7 +6,7 @@ const client = new Client({
   host: process.env.POSTGRESQL_DB_HOST,
   user: process.env.POSTGRESQL_DB_USER,
   password: process.env.POSTGRESQL_DB_PASSWORD,
-  database: 'gymkhana',
+  database: 'postgres', // 'gymkhana',
   port: 5432
 })
 
